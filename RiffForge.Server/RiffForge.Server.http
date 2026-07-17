@@ -1,0 +1,6 @@
+@RiffForge.Server_HostAddress = http://localhost:5157
+
+GET {{RiffForge.Server_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###

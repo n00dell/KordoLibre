@@ -1,0 +1,7 @@
+<Solution>
+  <Project Path="riffforge.client/riffforge.client.esproj">
+    <Build />
+    <Deploy />
+  </Project>
+  <Project Path="RiffForge.Server/RiffForge.Server.csproj" />
+</Solution>
