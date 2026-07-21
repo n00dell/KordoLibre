@@ -270,10 +270,10 @@ a {
 /* ----- Vinyl Grid ----- */
 .vinyl-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 2.75rem;
-    justify-items: center;
-    margin-top: 2rem;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1.5rem;
+    padding: 1rem 0;
+    width: 100%;
 }
 
 /* ----- The Vinyl Card ----- */
@@ -462,8 +462,13 @@ a {
 }
 
 .song-subtitle {
-    color: var(--text-secondary);
-    font-size: 1rem;
+    font-size: 0.85rem;
+    color: #a0a0a0;
+    width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-top: 0.25rem;
 }
 
 .version-meta {
@@ -716,3 +721,45 @@ a {
     color: var(--text-muted);
     font-size: 0.85rem;
 }
+/* Individual Result Card */
+.lastfm-result-card {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    background: #1e1e1e; /* Dark background matching Sunburst theme */
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 0.75rem;
+    text-align: left;
+    cursor: pointer;
+    overflow: hidden; /* Prevents huge images from bursting out */
+    transition: transform 0.2s ease, border-color 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+    .lastfm-result-card:hover {
+        transform: translateY(-4px);
+        border-color: #ff7a00; /* Sunburst orange accent */
+    }
+
+    /* Image wrapper / Styling */
+    .lastfm-result-card img {
+        width: 100%;
+        aspect-ratio: 1 / 1; /* Forces a perfect square */
+        object-fit: cover; /* Crops image cleanly without distortion */
+        border-radius: 8px;
+        background-color: #121212;
+        margin-bottom: 0.75rem;
+    }
+
+    /* Song Title */
+    .lastfm-result-card div:not(.song-subtitle) {
+        font-weight: 600;
+        font-size: 0.95rem;
+        color: #f0f0f0;
+        width: 100%;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis; /* Truncates long titles with ... */
+    }
