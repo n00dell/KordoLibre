@@ -7,14 +7,16 @@ namespace RiffForge.Server.Services
     {
         private readonly HttpClient _http;
         private readonly string _apiKey;
+        private readonly IAlbumArtService _albumArtService;
         private static readonly JsonSerializerOptions JsonOpts = new(JsonSerializerDefaults.Web);
         //inject here rather than in Program.cs(prevents socket overload) so we can set the base address and api key in one place, and not have to worry about it elsewhere.
-        public LastFmService(HttpClient http, IConfiguration config)
+        public LastFmService(HttpClient http, IConfiguration config, IAlbumArtService albumArtService)
         {
             _http = http;
             _http.BaseAddress = new Uri("https://ws.audioscrobbler.com/2.0/");
             _apiKey = config["LastFm:ApiKey"]
                 ?? throw new InvalidOperationException("LastFm:ApiKey is not configured.");
+            _albumArtService = albumArtService;
         }
 
         public async Task<List<LastFmTrackSummary>> SearchTracksAsync(string query, CancellationToken ct = default)
@@ -22,24 +24,71 @@ namespace RiffForge.Server.Services
             var url = $"?method=track.search&track={Uri.EscapeDataString(query)}" +
                       $"&api_key={_apiKey}&format=json&limit=15";
 
-            var response = await _http.GetFromJsonAsync<LastFmSearchResponse>(url, JsonOpts, ct);
-            var rawTracks = response?.Results?.TrackMatches?.Track ?? new List<LastFmRawTrack>();
+            var response = await _http.GetAsync(url, ct);
+            if (!response.IsSuccessStatusCode)
+                return new List<LastFmTrackSummary>();
+            var tracks = await ParseLastFmSearchResultsAsync(response);
 
-            return rawTracks
-                .Select(t => new LastFmTrackSummary
+            // 2. Fetch iTunes artwork for all tracks in parallel
+            var artTasks = tracks.Select(async track =>
+            {
+                var artUrl = await _albumArtService.GetCoverArtUrlAsync(track.Artist, track.Name);
+
+                return new LastFmTrackSummary
                 {
-                    Name = t.Name,
-                    Artist = t.Artist,
-                    Listeners = int.TryParse(t.Listeners, out var l) ? l : 0,
-                    // "extralarge" is the biggest size track.search gives you;
-                    // full-res art usually needs album.getInfo, added later if needed.
-                    ImageUrl = t.Image?.FirstOrDefault(i => i.Size == "extralarge")?.Text
-                })
-                .Where(t => !string.IsNullOrWhiteSpace(t.ImageUrl)) // drop the placeholder-only results
-                .OrderByDescending(t => t.Listeners)
-                .ToList();
-        }
+                    Name = track.Name,
+                    Artist = track.Artist,
+                    // Use iTunes art directly; fallback to Last.fm URL only if iTunes returns null
+                    ImageUrl = artUrl ?? track.ImageUrl
+                };
+            });
 
+            var enrichedResults = await Task.WhenAll(artTasks);
+            return enrichedResults.ToList();
+        }
+        private static async Task<List<LastFmTrackSummary>> ParseLastFmSearchResultsAsync(HttpResponseMessage response)
+        {
+            var list = new List<LastFmTrackSummary>();
+
+            using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+
+            // Last.fm wraps search results in: results -> trackmatches -> track
+            if (!doc.RootElement.TryGetProperty("results", out var results) ||
+                !results.TryGetProperty("trackmatches", out var trackmatches) ||
+                !trackmatches.TryGetProperty("track", out var trackArray) ||
+                trackArray.ValueKind != JsonValueKind.Array)
+            {
+                return list;
+            }
+
+            foreach (var t in trackArray.EnumerateArray())
+            {
+                var name = t.TryGetProperty("name", out var n) ? n.GetString() : null;
+                var artist = t.TryGetProperty("artist", out var a) ? a.GetString() : null;
+
+                if (string.IsNullOrWhiteSpace(name) || string.IsNullOrWhiteSpace(artist))
+                    continue;
+
+                // Try to read Last.fm's default image array as a fallback
+                string? lastFmImage = null;
+                if (t.TryGetProperty("image", out var imgArray) && imgArray.ValueKind == JsonValueKind.Array)
+                {
+                    // Fetch the largest available image from the array (usually index 2 or last)
+                    lastFmImage = imgArray.EnumerateArray()
+                        .LastOrDefault()
+                        .TryGetProperty("#text", out var imgUrl) ? imgUrl.GetString() : null;
+                }
+
+                list.Add(new LastFmTrackSummary
+                {
+                    Name = name,
+                    Artist = artist,
+                    ImageUrl = string.IsNullOrWhiteSpace(lastFmImage) ? null : lastFmImage
+                });
+            }
+
+            return list;
+        }
         public async Task<LastFmTrackDetail?> GetTrackInfoAsync(string artist, string track, CancellationToken ct = default)
         {
             var url = $"?method=track.getInfo&artist={Uri.EscapeDataString(artist)}" +

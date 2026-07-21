@@ -15,6 +15,7 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 builder.Services.AddDbContext<RiffForgeDbContext>(options =>
     options.UseNpgsql(connectionString));
 builder.Services.AddHttpClient<ILastFmService, LastFmService>();
+builder.Services.AddHttpClient<IAlbumArtService, AlbumArtService>();
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 
