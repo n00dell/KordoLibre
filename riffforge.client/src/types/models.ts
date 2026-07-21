@@ -71,6 +71,8 @@ export interface Song {
     instrumentType: InstrumentType;
     genres: Genre[];
     versions: SongVersion[];
+    albumArtUrl?: string;
+    lyrics?: string;
 }
 
 // A couple of small "derived" helpers, same idea as the [NotMapped] properties

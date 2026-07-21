@@ -1,20 +1,24 @@
-// context/ThemeContext.ts — no components in this file, so Fast Refresh
-// never needs to touch it; it can change freely without a full reload.
 import { createContext, useContext } from "react";
 
-export type ThemeName = "sunburst" | "chorus" | "cassette";
+export type ThemeName = "sunburst" | "chorus" | "cassette" | "vinyl";
 
-export const THEME_OPTIONS: { value: ThemeName; label: string }[] = [
-    { value: "sunburst", label: "Sunburst" },
-    { value: "chorus", label: "Chorus Pedal" },
-    { value: "cassette", label: "Cassette" },
+export interface ThemeOption {
+    value: ThemeName;
+    label: string;
+}
+
+export const THEME_OPTIONS: ThemeOption[] = [
+    { value: "sunburst", label: "Sunburst (Color)" },
+    { value: "chorus", label: "Chorus (Color)" },
+    { value: "vinyl", label: "Vinyl (Card)" },
+    { value: "cassette", label: "Cassette (Card)" },
 ];
 
 export const STORAGE_KEY = "riffforge-theme";
 
 export function readInitialTheme(): ThemeName {
     const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored === "sunburst" || stored === "chorus" || stored === "cassette") {
+    if (stored === "sunburst" || stored === "chorus" || stored === "cassette" || stored === "vinyl") {
         return stored;
     }
     return "sunburst";
@@ -27,7 +31,7 @@ interface ThemeContextValue {
 
 export const ThemeContext = createContext<ThemeContextValue>({
     theme: "sunburst",
-    setTheme: () => {},
+    setTheme: () => { },
 });
 
 export function useTheme() {

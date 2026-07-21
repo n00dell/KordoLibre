@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Data;
 using RiffForge.Server.Services;
+using RiffForge.Server.Services.Interfaces;
+using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -16,6 +18,17 @@ builder.Services.AddDbContext<RiffForgeDbContext>(options =>
     options.UseNpgsql(connectionString));
 builder.Services.AddHttpClient<ILastFmService, LastFmService>();
 builder.Services.AddHttpClient<IAlbumArtService, AlbumArtService>();
+builder.Services.AddHttpClient<ILyricsService, LyricsService>();
+// Program.cs
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        // 1. Prevents circular reference crashes
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+
+        // 2. Serializes Enums as strings ("Completed" instead of 2)
+        options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+    });
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
 

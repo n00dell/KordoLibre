@@ -22,7 +22,12 @@ namespace RiffForge.Server.Models
 
         [ForeignKey(nameof(PrimaryArtist))]
         public int PrimaryArtistId { get; set; }
+
+        [MaxLength(500)]
+        public string? AlbumArtUrl { get; set; }
         public Artist PrimaryArtist { get; set; } = null!;
+
+        public string? Lyrics { get; set; }
 
         public ICollection<Artist> FeaturedArtists { get; set; } = new List<Artist>();
 

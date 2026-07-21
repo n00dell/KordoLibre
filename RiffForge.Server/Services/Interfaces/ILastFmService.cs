@@ -1,6 +1,6 @@
 ﻿using RiffForge.Server.Models.LastFm;
 
-namespace RiffForge.Server.Services
+namespace RiffForge.Server.Services.Interfaces
 {
     public interface ILastFmService
     {

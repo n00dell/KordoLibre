@@ -19,6 +19,8 @@ namespace RiffForge.Server.Data
         public DbSet<UserSongProgress> UserSongProgresses { get; set; }
         public DbSet<ScrapeRequest> ScrapeRequests { get; set; }
 
+        public DbSet<SongVersion> SongVersions { get; set; }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);

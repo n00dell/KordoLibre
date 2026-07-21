@@ -1,6 +1,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import SongCard from "../components/SongCard";
 import type { LastFmTrackSummary, ScrapeRequest } from "../types/lastfm";
+import type { Song } from "../types/models";
 
 function SearchPage() {
     const [query, setQuery] = useState("");
@@ -10,20 +12,14 @@ function SearchPage() {
     const navigate = useNavigate();
     const abortRef = useRef<AbortController | null>(null);
 
-    const trimmed = query.trim(); // derived, not stored — same idea as before
+    const trimmed = query.trim();
 
     useEffect(() => {
         if (trimmed.length < 2) {
-            // Nothing to set here. The effect just doesn't fire a fetch;
-            // `visibleResults` below handles what the user sees.
+            // setResults([]);
             return;
         }
 
-        // Debouncing: don't fire a request on every keystroke. setTimeout
-        // schedules the fetch 350ms out; the cleanup function below (returned
-        // from useEffect) cancels that timer if `query` changes again before
-        // it fires. Net effect: only the last keystroke in a burst of typing
-        // actually triggers a network call.
         const timer = setTimeout(async () => {
             abortRef.current?.abort();
             const controller = new AbortController();
@@ -35,8 +31,10 @@ function SearchPage() {
                     `/api/songsearch?query=${encodeURIComponent(trimmed)}`,
                     { signal: controller.signal }
                 );
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
                 const data: LastFmTrackSummary[] = await res.json();
-                setResults(data); // fine — this is inside an async callback, not the effect body
+                setResults(data);
             } catch (err) {
                 if ((err as Error).name !== "AbortError") console.error(err);
             } finally {
@@ -44,41 +42,77 @@ function SearchPage() {
             }
         }, 350);
 
-        // This cleanup function runs before the NEXT effect run (i.e. the next
-        // keystroke) or on unmount. React calling it automatically is what
-        // makes debounce/cancel patterns like this work without a memory leak.
         return () => clearTimeout(timer);
     }, [trimmed]);
 
     const visibleResults = trimmed.length < 2 ? [] : results;
+
     async function handleSelect(track: LastFmTrackSummary) {
         setImporting({ id: -1, query: `${track.artist} - ${track.name}`, status: "Pending" });
 
-        const res = await fetch("/api/songsearch/import", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ artist: track.artist, track: track.name }),
-        });
-        const scrapeRequest: ScrapeRequest = await res.json();
-        setImporting(scrapeRequest);
-        pollStatus(scrapeRequest.id);
+        try {
+            const res = await fetch("/api/songsearch/import", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ artist: track.artist, track: track.name }),
+            });
+
+            if (!res.ok) throw new Error(`Import failed with status ${res.status}`);
+
+            const scrapeRequest: ScrapeRequest = await res.json();
+            setImporting(scrapeRequest);
+
+            // If already completed immediately by DB lookup, navigate right away
+            if (scrapeRequest.status === "Completed" && scrapeRequest.resultSongId) {
+                navigate(`/song/${scrapeRequest.resultSongId}`);
+            } else {
+                pollStatus(scrapeRequest.id);
+            }
+        } catch (err) {
+            console.error("Import error:", err);
+            setImporting({ id: -1, query: `${track.artist} - ${track.name}`, status: "Failed" });
+        }
     }
 
-    // Polling: since scraping other sites takes real time, we ask "are you
-    // done yet?" every couple seconds instead of holding one request open.
     function pollStatus(id: number) {
         const interval = setInterval(async () => {
-            const res = await fetch(`/api/songsearch/status/${id}`);
-            const updated: ScrapeRequest = await res.json();
-            setImporting(updated);
+            try {
+                const res = await fetch(`/api/songsearch/status/${id}`);
+                if (!res.ok) return;
 
-            if (updated.status === "Completed" && updated.resultSongId) {
-                clearInterval(interval);
-                navigate(`/song/${updated.resultSongId}`);
-            } else if (updated.status === "Failed") {
+                const updated: ScrapeRequest = await res.json();
+                setImporting(updated);
+
+                if (updated.status === "Completed" && updated.resultSongId) {
+                    clearInterval(interval);
+                    navigate(`/song/${updated.resultSongId}`);
+                } else if (updated.status === "Failed") {
+                    clearInterval(interval);
+                }
+            } catch (err) {
+                console.error("Polling error:", err);
                 clearInterval(interval);
             }
-        }, 2000);
+        }, 1500);
+    }
+
+    function trackToSong(track: LastFmTrackSummary): Song {
+        return {
+            id: -1, // Temporary ID for preview card
+            name: track.name,
+            primaryArtist: {
+                id: -1,
+                name: track.artist,
+                imageUrl: track.imageUrl
+            },
+            featuredArtists: [],
+            bpm: 120,
+            releaseDate: new Date().toISOString(),
+            instrumentType: "AcousticGuitar",
+            albumArtUrl: track.imageUrl,
+            genres: [],
+            versions: []
+        };
     }
 
     return (
@@ -97,7 +131,7 @@ function SearchPage() {
             {importing && (
                 <div className="import-status-banner">
                     {importing.status === "Failed"
-                        ? `Couldn't find chords for "${importing.query}".`
+                        ? `Couldn't find song for "${importing.query}".`
                         : `Fetching "${importing.query}"…`}
                 </div>
             )}
@@ -110,15 +144,11 @@ function SearchPage() {
 
             <div className="vinyl-grid">
                 {visibleResults.map((track) => (
-                    <button
+                    <SongCard
                         key={`${track.artist}-${track.name}`}
-                        className="lastfm-result-card"
+                        song={trackToSong(track)}
                         onClick={() => handleSelect(track)}
-                    >
-                        {track.imageUrl && <img src={track.imageUrl} alt={track.name} />}
-                        <div>{track.name}</div>
-                        <div className="song-subtitle">{track.artist}</div>
-                    </button>
+                    />
                 ))}
             </div>
         </div>

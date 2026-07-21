@@ -2,6 +2,7 @@
 using RiffForge.Server.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Text.Json.Serialization;
 
 namespace RiffForge.Server.Models
 {
@@ -13,10 +14,11 @@ namespace RiffForge.Server.Models
 
         [ForeignKey(nameof(Song))]
         public int SongId { get; set; }
+        [JsonIgnore]
         public Song Song { get; set; } = null!;
 
         [MaxLength(10000)]
-        public string? TabData { get; set; }
+        public string? TabData { get; set; } = string.Empty;
 
         [Column(TypeName = "jsonb")]
         public string? StructuredTabJson { get; set; }

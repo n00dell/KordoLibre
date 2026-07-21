@@ -1,4 +1,5 @@
 ﻿using RiffForge.Server.Models.LastFm;
+using RiffForge.Server.Services.Interfaces;
 using System.Text.Json;
 
 namespace RiffForge.Server.Services

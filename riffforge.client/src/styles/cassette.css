@@ -1,0 +1,137 @@
+/* styles/cassette.css */
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&display=swap');
+
+.cassette-card {
+    --shell-color: #5e4a8a; /* overridden per-instance via inline style */
+    position: relative;
+    width: 220px;
+    height: 140px;
+    border-radius: 10px;
+    background: linear-gradient(160deg, var(--shell-color), color-mix(in srgb, var(--shell-color) 60%, black));
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 24px var(--shadow-color, rgba(0, 0, 0, 0.7));
+    cursor: pointer;
+    padding: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    font: inherit;
+    color: inherit;
+    text-align: left;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+    flex-shrink: 0;
+}
+
+    .cassette-card:hover {
+        transform: translateY(-4px) rotate(-1deg);
+        box-shadow: 0 18px 36px var(--shadow-color, rgba(0, 0, 0, 0.8));
+    }
+
+    .cassette-card .difficulty-pill {
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        z-index: 2;
+    }
+
+.cassette-window {
+    background: rgba(0, 0, 0, 0.55);
+    border-radius: 6px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 14px;
+    position: relative;
+}
+
+.tape-strip {
+    position: absolute;
+    left: 30%;
+    right: 30%;
+    top: 50%;
+    height: 3px;
+    background: rgba(80, 60, 40, 0.9);
+    transform: translateY(-50%);
+}
+
+.reel-hub {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #d8d0c0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1;
+}
+
+.reel-tape {
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: #2b2118;
+    transition: transform 0.4s ease;
+}
+
+.reel-spokes {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--bg-base, #14100d);
+    position: relative;
+    z-index: 2;
+}
+
+    .reel-spokes::before {
+        content: "";
+        position: absolute;
+        inset: -8px;
+        border: 2px solid rgba(0, 0, 0, 0.5);
+        border-radius: 50%;
+        clip-path: polygon( 45% 0%, 55% 0%, 55% 45%, 100% 45%, 100% 55%, 55% 55%, 55% 100%, 45% 100%, 45% 55%, 0% 55%, 0% 45%, 45% 45% );
+    }
+
+.cassette-card:hover .reel-spokes {
+    animation: reel-spin 1.6s linear infinite;
+}
+
+@keyframes reel-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.cassette-label {
+    background: #f1ead9;
+    color: #2b2118;
+    border-radius: 4px;
+    padding: 6px 10px;
+    transform: rotate(-1deg);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.label-title {
+    font-family: 'Caveat', cursive;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.label-artist {
+    font-family: 'Caveat', cursive;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #5c4f3d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}

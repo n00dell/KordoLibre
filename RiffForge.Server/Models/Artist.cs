@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
 
 namespace RiffForge.Server.Models
 {
@@ -31,6 +32,7 @@ namespace RiffForge.Server.Models
 
         public DateTime? LastScraped { get; set; }
 
+        [JsonIgnore]
         public ICollection<Song> Songs { get; set; } = new List<Song>();
     }
 }

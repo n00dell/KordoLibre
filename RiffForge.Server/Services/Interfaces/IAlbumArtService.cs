@@ -1,4 +1,4 @@
-﻿namespace RiffForge.Server.Services
+﻿namespace RiffForge.Server.Services.Interfaces
 {
     public interface IAlbumArtService
     {
