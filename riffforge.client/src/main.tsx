@@ -2,7 +2,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import { BrowserRouter } from "react-router-dom";
 import App from "./App";
-import { ThemeProvider } from "./context/ThemeContext";
+import { ThemeProvider } from "./context/ThemeProvider";
 import "./App.css";
 
 // ThemeProvider wraps everything so any component, anywhere in the tree,
