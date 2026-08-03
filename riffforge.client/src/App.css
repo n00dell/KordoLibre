@@ -78,7 +78,7 @@ a {
 
 /* ----- Navbar ----- */
 .navbar {
-    background: rgba(10, 8, 6, 0.85);
+    background: rgba(10, 8, 6, 0.45);
     backdrop-filter: blur(12px);
     padding: 1rem 2rem;
     border-bottom: 1px solid var(--border-color);
@@ -839,14 +839,14 @@ a {
     position: relative;
     width: 280px;
     height: 280px;
-    background: radial-gradient(circle, #222 0%, #0d0d0d 80%);
+    background: radial-gradient(circle, rgba(20,20,20,0.5) 0%, transparent 75%);
     border-radius: 20px;
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.1);
+    box-shadow: none;
     display: flex;
     align-items: center;
     justify-content: center;
     margin-bottom: 2rem;
-    border: 2px solid #333;
+    border: none;
 }
 
 /* The Spinning Record */
@@ -913,11 +913,11 @@ a {
 /* Tone Arm / Needle */
 .tone-arm {
     position: absolute;
-    top: -10px;
-    right: -15px;
-    width: 120px;
-    height: 180px;
-    background-image: linear-gradient(to bottom, #888, #ccc, #555);
+    top: 8px;
+    right: 6px;
+    width: 10px;
+    height: 165px;
+    background: linear-gradient(to bottom, #c9c9c9, #8a8a8a 60%, #666);
     /* Pivot point at top right */
     transform-origin: top right;
     /* Drops down and onto the record after 0.8s */
@@ -925,25 +925,47 @@ a {
     transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1) 0.8s;
     z-index: 4;
     pointer-events: none;
-    border-radius: 4px;
-    box-shadow: -3px 5px 10px rgba(0, 0, 0, 0.4);
+    border-radius: 6px 6px 2px 2px;
+    box-shadow: -1px 3px 6px rgba(0, 0, 0, 0.5);
 }
-
+    .tone-arm::before {
+        content: "";
+        position: absolute;
+        bottom: -2px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 18px;
+        height: 22px;
+        background: #1a1a1a;
+        border-radius: 3px;
+    }
     /* Needle Head */
     .tone-arm::after {
         content: "";
-        position: absolute;
-        bottom: 5px;
-        left: 10px;
-        width: 14px;
-        height: 25px;
-        background: #111;
-        border-radius: 3px;
+        bottom: 4px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 3px;
+        height: 10px;
+        background: #ff3b3b; /* a lot of real cartridges have a red stylus guard — reads well against dark bg */
+        border-radius: 1px;
     }
 
 /* Active State: Needle is down on the record */
 .turntable-deck.playing .tone-arm {
     transform: rotate(5deg); /* Needle drops onto the record groove */
+}
+/* Counterweight at the pivot end, for realism */
+.turntable-deck::after {
+    content: "";
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #444, #111);
+    z-index: 5;
 }
 
 /* --- Keyframe Animations --- */
@@ -976,6 +998,63 @@ a {
 }
 
 @keyframes fadeInContent {
+    to {
+        opacity: 1;
+    }
+}
+/* ----- Full-bleed ambient backdrop ----- */
+.album-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+    background-color: var(--bg-base);
+}
+
+.album-backdrop-image {
+    position: absolute;
+    inset: -60px; /* oversize so blurred edges don't show the viewport edge */
+    background-size: cover;
+    background-position: center;
+    filter: blur(70px) saturate(1.4) brightness(0.75);
+    transform: scale(1.15);
+    opacity: 0;
+    animation: backdropFadeIn 1s ease-out forwards;
+}
+.song-body-layout {
+    display: grid;
+    grid-template-columns: 1fr 220px;
+    gap: 2rem;
+    align-items: start;
+}
+
+.chord-diagram-rail {
+    position: sticky;
+    top: 90px; /* clears the sticky navbar */
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.chord-diagram-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 0.9rem;
+    transition: border-color 0.2s;
+}
+
+    .chord-diagram-card.active {
+        border-color: var(--accent);
+    }
+
+.album-backdrop-scrim {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.15) 40%, var(--bg-base) 92%);
+}
+
+@keyframes backdropFadeIn {
     to {
         opacity: 1;
     }

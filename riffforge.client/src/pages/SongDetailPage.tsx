@@ -66,11 +66,16 @@ function SongDetailPage() {
 
     return (
         <div className="song-detail-page turntable-view-container">
-            <Link to="/" className="back-link">
-                ← Back to Library
-            </Link>
+            <div className="album-backdrop">
+                <div
+                    className="album-backdrop-image"
+                    style={{ backgroundImage: song.albumArtUrl ? `url(${song.albumArtUrl})` : undefined }}
+                />
+                <div className="album-backdrop-scrim" />
+            </div>
 
-            {/* Turntable Deck & Needle Mechanism */}
+            <Link to="/" className="back-link">← Back to Library</Link>
+
             <div className={`turntable-deck ${isPlaying ? "playing" : ""}`}>
                 <div className="tone-arm" />
                 <div className="turntable-record">
