@@ -5,6 +5,7 @@ import SearchPage from "./pages/SearchPage";
 import PracticePlanPage from "./pages/PracticePlanPage";
 import SongDetailPage from "./pages/SongDetailPage";
 import SongVersionsPage from "./pages/SongVersionsPage";
+import GuitarTuner from "./pages/GuitarTuner";
 
 // <Routes> looks at the current URL and renders whichever <Route>'s `path`
 // matches. Navbar sits outside <Routes> so it's always visible, no matter
@@ -26,6 +27,7 @@ function App() {
                     <Route path="/song/:id" element={<SongDetailPage />} />
                     <Route path="/song/:id/version/:versionId" element={<SongDetailPage />} />
                     <Route path="/song/:id/versions" element={<SongVersionsPage />} />
+                    <Route path="/tuner" element={<GuitarTuner />} />
                 </Routes>
             </div>
         </>

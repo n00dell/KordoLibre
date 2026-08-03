@@ -3,6 +3,7 @@ import type { Song } from "../types/models";
 import { getDefaultVersion } from "../types/models";
 import { tapeColorForGenre } from "../utils/tapeColors";
 import "../styles/cassette.css";
+import useDominantColor from "../hooks/useDominantColor";
 
 interface CassetteCardProps {
     song: Song;
@@ -15,12 +16,11 @@ interface CassetteCardProps {
 
 function CassetteCard({ song, onClick, progress }: CassetteCardProps) {
     const primaryGenre = song.genres?.[0]?.name;
-    const shellColor = tapeColorForGenre(primaryGenre, song.id);
+    const fallbackColor = tapeColorForGenre(primaryGenre, song.id);
+    const shellColor = useDominantColor(song.albumArtUrl, fallbackColor);
     const defaultVersion = getDefaultVersion(song);
-
-    // Clamp defensively — bad/missing data here should degrade to "looks
-    // like an unplayed tape," never to a broken transform or NaN.
     const wound = Math.min(1, Math.max(0, progress ?? 0));
+
 
     return (
         <div
