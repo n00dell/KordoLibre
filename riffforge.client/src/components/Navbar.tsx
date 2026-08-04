@@ -1,13 +1,16 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import ThemeSwitcher from "./ThemeSwitcher";
+import { useAuth } from "../hooks/useAuth";
 
-// `NavLink` is React Router's version of an <a> tag. Two key differences
-// from a plain <a href="...">:
-//   1. It doesn't reload the page — React swaps the page content in place,
-//      which is what makes single-page apps feel instant.
-//   2. It automatically knows when it's "active" (i.e. its `to` matches the
-//      current URL) and lets you style that state.
 function Navbar() {
+    const { user, loading, logout } = useAuth();
+    const navigate = useNavigate();
+
+    async function handleLogout() {
+        await logout();
+        navigate("/login");
+    }
+
     return (
         <nav className="navbar">
             <div className="nav-container">
@@ -24,6 +27,11 @@ function Navbar() {
                         </NavLink>
                     </li>
                     <li>
+                        <NavLink to="/tuner" className={({ isActive }) => (isActive ? "active" : "")}>
+                            Tuner
+                        </NavLink>
+                    </li>
+                    <li>
                         <NavLink to="/search" className={({ isActive }) => (isActive ? "active" : "")}>
                             Search
                         </NavLink>
@@ -31,7 +39,25 @@ function Navbar() {
                 </ul>
                 <div className="navbar-right">
                     <ThemeSwitcher />
-                    <div className="user-profile">👤</div>
+
+                    {loading ? null : user ? (
+                        <div className="navbar-user-menu">
+                            <NavLink
+                                to="/profile"
+                                className={({ isActive }) => `user-profile${isActive ? " active" : ""}`}
+                                title={user.email}
+                            >
+                                👤
+                            </NavLink>
+                            <button type="button" className="navbar-logout-btn" onClick={handleLogout}>
+                                Log Out
+                            </button>
+                        </div>
+                    ) : (
+                        <NavLink to="/login" className="navbar-login-link">
+                            Log In
+                        </NavLink>
+                    )}
                 </div>
             </div>
         </nav>

@@ -7,12 +7,15 @@ import ChordLyricLine from "../components/ChordLyricLine";
 import ChordDiagram from "../components/ChordDiagram";
 import TurntablePlayer from "../components/TurntablePlayer";
 import TapeDeckPlayer from "../components/TapeDeckPlayer";
+import { fetchLibraryStatus, addToLibrary, removeFromLibrary } from "../api/library";
 
 function SongDetailPage() {
     const { id } = useParams<{ id: string }>();
     const { theme } = useTheme();
     const [song, setSong] = useState<Song | null>(null);
     const [loading, setLoading] = useState(true);
+    const [inLibrary, setInLibrary] = useState(false);
+    const [libraryBusy, setLibraryBusy] = useState(false);
 
     useEffect(() => {
         if (!id) return;
@@ -38,6 +41,42 @@ function SongDetailPage() {
 
         loadSong();
     }, [id]);
+
+    // Once we have the real song (and its numeric id), check whether it's already saved.
+    useEffect(() => {
+        if (!song || song.id < 0) return;
+
+        let cancelled = false;
+        fetchLibraryStatus([song.id])
+            .then((saved) => {
+                if (!cancelled) setInLibrary(saved.has(song.id));
+            })
+            .catch((err) => console.error("Failed to load library status:", err));
+
+        return () => {
+            cancelled = true;
+        };
+    }, [song]);
+
+    async function handleToggleLibrary() {
+        if (!song || song.id < 0 || libraryBusy) return;
+
+        const next = !inLibrary;
+        setInLibrary(next); // optimistic
+        setLibraryBusy(true);
+        try {
+            if (next) {
+                await addToLibrary(song.id);
+            } else {
+                await removeFromLibrary(song.id);
+            }
+        } catch (err) {
+            console.error("Library toggle failed:", err);
+            setInLibrary(!next); // revert
+        } finally {
+            setLibraryBusy(false);
+        }
+    }
 
     if (loading) {
         return (
@@ -77,6 +116,17 @@ function SongDetailPage() {
                 <p className="song-subtitle">
                     {song.primaryArtist?.name ?? "Unknown Artist"} · {song.bpm} BPM
                 </p>
+
+                {song.id >= 0 && (
+                    <button
+                        type="button"
+                        className={`add-to-library-btn${inLibrary ? " active" : ""}`}
+                        onClick={handleToggleLibrary}
+                        disabled={libraryBusy}
+                    >
+                        {inLibrary ? "★ In Your Library" : "☆ Add to Library"}
+                    </button>
+                )}
             </div>
 
             {version && (

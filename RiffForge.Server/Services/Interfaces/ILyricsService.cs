@@ -2,6 +2,6 @@
 {
     public interface ILyricsService
     {
-        Task<string> GetLyricsAsync(string artist, string track, CancellationToken ct = default);
+        Task<string?> GetLyricsAsync(string artist, string track, CancellationToken ct = default);
     }
 }

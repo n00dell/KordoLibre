@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations;
 
 namespace RiffForge.Server.Models
 {
-    public class UserProfile
+    public class UserProfile 
     {
         [Key]
         public int Id { get; set; }
@@ -23,5 +23,7 @@ namespace RiffForge.Server.Models
 
         public ICollection<Genre> FavoriteGenres { get; set; } = new List<Genre>();
         public ICollection<Technique> MasteredTechniques { get; set; } = new List<Technique>();
+
+        public ICollection<Song> LibrarySongs { get; set; } = new List<Song>();
     }
 }

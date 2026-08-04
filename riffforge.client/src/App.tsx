@@ -6,31 +6,34 @@ import PracticePlanPage from "./pages/PracticePlanPage";
 import SongDetailPage from "./pages/SongDetailPage";
 import SongVersionsPage from "./pages/SongVersionsPage";
 import GuitarTuner from "./pages/GuitarTuner";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+import ProfilePage from "./pages/ProfilePage";
+import { AuthProvider } from "./context/AuthContext";
+import ProtectedRoute from "./components/ProtectedRoute";
 
-// <Routes> looks at the current URL and renders whichever <Route>'s `path`
-// matches. Navbar sits outside <Routes> so it's always visible, no matter
-// which page you're on — only the ".main-content" area below it swaps out.
-//
-// Note that /song/:id and /song/:id/version/:versionId both point at
-// SongDetailPage — same component, just with an extra URL param available
-// on the second route. useParams() inside SongDetailPage picks up whichever
-// params are present.
+// Login/Register stay outside ProtectedRoute — obviously, or nobody could
+// ever reach them to log in. Everything else requires a session.
 function App() {
     return (
-        <>
+        <AuthProvider>
             <Navbar />
             <div className="main-content">
                 <Routes>
-                    <Route path="/" element={<LibraryPage />} />
-                    <Route path="/search" element={<SearchPage />} />
-                    <Route path="/practice" element={<PracticePlanPage />} />
-                    <Route path="/song/:id" element={<SongDetailPage />} />
-                    <Route path="/song/:id/version/:versionId" element={<SongDetailPage />} />
-                    <Route path="/song/:id/versions" element={<SongVersionsPage />} />
-                    <Route path="/tuner" element={<GuitarTuner />} />
+                    <Route path="/login" element={<LoginPage />} />
+                    <Route path="/register" element={<RegisterPage />} />
+
+                    <Route path="/" element={<ProtectedRoute><LibraryPage /></ProtectedRoute>} />
+                    <Route path="/search" element={<ProtectedRoute><SearchPage /></ProtectedRoute>} />
+                    <Route path="/practice" element={<ProtectedRoute><PracticePlanPage /></ProtectedRoute>} />
+                    <Route path="/song/:id" element={<ProtectedRoute><SongDetailPage /></ProtectedRoute>} />
+                    <Route path="/song/:id/version/:versionId" element={<ProtectedRoute><SongDetailPage /></ProtectedRoute>} />
+                    <Route path="/song/:id/versions" element={<ProtectedRoute><SongVersionsPage /></ProtectedRoute>} />
+                    <Route path="/tuner" element={<ProtectedRoute><GuitarTuner /></ProtectedRoute>} />
+                    <Route path="/profile" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
                 </Routes>
             </div>
-        </>
+        </AuthProvider>
     );
 }
 

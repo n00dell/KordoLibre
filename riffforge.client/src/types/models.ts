@@ -73,6 +73,7 @@ export interface Song {
     versions: SongVersion[];
     albumArtUrl?: string;
     lyrics?: string;
+    isInLibrary?: boolean;
 }
 
 // A couple of small "derived" helpers, same idea as the [NotMapped] properties

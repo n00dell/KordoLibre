@@ -12,3 +12,14 @@ export interface ScrapeRequest {
     resultSongId?: number;
     errorMessage?: string;
 }
+export interface LocalSongMatch {
+    id: number;
+    name: string;
+    artistName: string;
+    albumArtUrl?: string;
+}
+
+export interface SongSearchResponse {
+    localMatches: LocalSongMatch[];
+    externalMatches: LastFmTrackSummary[];
+}

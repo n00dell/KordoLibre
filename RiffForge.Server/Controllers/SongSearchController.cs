@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Data;
 using RiffForge.Server.Models;
+using RiffForge.Server.Models.DTOs;
 using RiffForge.Server.Models.Enums;
 using RiffForge.Server.Models.LastFm;
 using RiffForge.Server.Services.Interfaces;
@@ -25,15 +26,67 @@ namespace RiffForge.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<ActionResult<List<LastFmTrackSummary>>> Search(
-            [FromQuery] string query, CancellationToken ct)
+        public async Task<ActionResult<SongSearchResponse>> Search(
+    [FromQuery] string query, CancellationToken ct)
         {
             if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
-                return Ok(new List<LastFmTrackSummary>());
+                return Ok(new SongSearchResponse());
 
-            var results = await _lastFm.SearchTracksAsync(query, ct);
-            return Ok(results);
+            var normQuery = Normalize(query);
+            const double searchThreshold = 0.3;
+
+            // Typo-tolerant title/artist matches
+            var titleMatches = await _db.Songs
+                .Include(s => s.PrimaryArtist)
+                .Where(s =>
+                    EF.Functions.TrigramsSimilarity(s.NormalizedName, normQuery) > searchThreshold ||
+                    EF.Functions.TrigramsSimilarity(s.PrimaryArtist.NormalizedName, normQuery) > searchThreshold)
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Name,
+                    ArtistName = s.PrimaryArtist.Name,
+                    s.AlbumArtUrl,
+                    Score = EF.Functions.TrigramsSimilarity(s.NormalizedName, normQuery) >
+                            EF.Functions.TrigramsSimilarity(s.PrimaryArtist.NormalizedName, normQuery)
+                        ? EF.Functions.TrigramsSimilarity(s.NormalizedName, normQuery)
+                        : EF.Functions.TrigramsSimilarity(s.PrimaryArtist.NormalizedName, normQuery)
+                })
+                .ToListAsync(ct);
+
+            // Lyric substring matches — a lyric hit is a strong, unambiguous signal,
+            // so it's ranked above fuzzy title matches when both exist.
+            var lyricMatches = await _db.Songs
+                .Include(s => s.PrimaryArtist)
+                .Where(s => s.Lyrics != null && EF.Functions.ILike(s.Lyrics, $"%{query}%"))
+                .Select(s => new
+                {
+                    s.Id,
+                    s.Name,
+                    ArtistName = s.PrimaryArtist.Name,
+                    s.AlbumArtUrl,
+                    Score = 1.0
+                })
+                .ToListAsync(ct);
+
+            var localMatches = titleMatches.Concat(lyricMatches)
+                .GroupBy(s => s.Id)
+                .Select(g => g.OrderByDescending(s => s.Score).First()) // same song via both paths → keep the higher score
+                .OrderByDescending(s => s.Score)
+                .Take(15)
+                .Select(s => new LocalSongMatch(s.Id, s.Name, s.ArtistName, s.AlbumArtUrl))
+                .ToList();
+
+            var externalResults = await _lastFm.SearchTracksAsync(query, ct);
+
+            return Ok(new SongSearchResponse
+            {
+                LocalMatches = localMatches,
+                ExternalMatches = externalResults
+            });
         }
+        private static string Normalize(string input) =>
+    string.IsNullOrWhiteSpace(input) ? string.Empty : input.Trim().ToLowerInvariant();
         public record ImportRequest(string Artist, string Track);
 
         // POST /api/songsearch/import  { artist, track }
@@ -53,10 +106,12 @@ namespace RiffForge.Server.Controllers
             // 1. CHECK DB FIRST (Prevents Duplicates)
             // ==========================================
             var existingSong = await _db.Songs
-                .Include(s => s.PrimaryArtist)
-                .FirstOrDefaultAsync(s =>
-                    s.NormalizedName == normTrack &&
-                    s.PrimaryArtist.NormalizedName == normArtist, ct);
+    .Include(s => s.PrimaryArtist)
+    .Where(s =>
+        EF.Functions.TrigramsSimilarity(s.NormalizedName, normTrack) > 0.6 &&
+        EF.Functions.TrigramsSimilarity(s.PrimaryArtist.NormalizedName, normArtist) > 0.6)
+    .OrderByDescending(s => EF.Functions.TrigramsSimilarity(s.NormalizedName, normTrack))
+    .FirstOrDefaultAsync(ct);
 
             if (existingSong != null)
             {
@@ -189,12 +244,12 @@ namespace RiffForge.Server.Controllers
             return cleaned;
         }
 
-        // Standardizes string for database unique indexes
-        private static string Normalize(string input)
-        {
-            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
-            return input.Trim().ToLowerInvariant();
-        }
+        //// Standardizes string for database unique indexes
+        //private static string Normalize(string input)
+        //{
+        //    if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        //    return input.Trim().ToLowerInvariant();
+        //}
         // GET /api/songsearch/status/5 — the frontend polls this while scraping runs
         [HttpGet("status/{id}")]
         public async Task<ActionResult<ScrapeRequest>> Status(int id)

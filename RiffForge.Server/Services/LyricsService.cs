@@ -12,7 +12,7 @@ namespace RiffForge.Server.Services
             _http = http;
             _http.BaseAddress = new Uri("https://api.lyrics.ovh/v1/");
         }
-        public async Task<string> GetLyricsAsync(string artist, string track, CancellationToken ct = default)
+        public async Task<string?> GetLyricsAsync(string artist, string track, CancellationToken ct = default)
         {
             try
             {
@@ -21,7 +21,7 @@ namespace RiffForge.Server.Services
 
                 if (response.IsSuccessStatusCode)
                 {
-                    using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync());
+                    using var doc = JsonDocument.Parse(await response.Content.ReadAsStringAsync(ct));
                     if (doc.RootElement.TryGetProperty("lyrics", out var lyricsProp))
                     {
                         var text = lyricsProp.GetString();
@@ -34,8 +34,9 @@ namespace RiffForge.Server.Services
                 // Fails silently so it doesn't crash the import process
             }
 
-            // Fallback placeholder if the API returns 404 or fails
-            return "What do you know, my one and only, has places to go, somewhere you don't know me...\n\n(Full lyrics couldn't be found online right now.)";
+            // No fabricated placeholder — null means "we genuinely don't have lyrics",
+            // which lyric search needs to be able to tell apart from real lyrics.
+            return null;
         }
     }
 }

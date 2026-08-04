@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import SongCard from "../components/SongCard";
-import type { LastFmTrackSummary, ScrapeRequest } from "../types/lastfm";
+import type { LastFmTrackSummary, ScrapeRequest, LocalSongMatch, SongSearchResponse } from "../types/lastfm";
 import type { Song } from "../types/models";
 
 const RECENT_SEARCHES_KEY = "riffforge:recentSearches";
@@ -19,7 +19,6 @@ function loadRecentSearches(): RecentSearch[] {
         const raw = localStorage.getItem(RECENT_SEARCHES_KEY);
         return raw ? JSON.parse(raw) : [];
     } catch {
-        // Corrupt or blocked storage — degrade to "no history" rather than crash
         return [];
     }
 }
@@ -28,14 +27,14 @@ function saveRecentSearches(list: RecentSearch[]) {
     try {
         localStorage.setItem(RECENT_SEARCHES_KEY, JSON.stringify(list));
     } catch {
-        // Storage full/blocked (private browsing, quota) — fail silently,
-        // recent searches just won't persist this session
+        // Storage full/blocked — fail silently
     }
 }
 
 function SearchPage() {
     const [query, setQuery] = useState("");
-    const [results, setResults] = useState<LastFmTrackSummary[]>([]);
+    const [localResults, setLocalResults] = useState<LocalSongMatch[]>([]);
+    const [externalResults, setExternalResults] = useState<LastFmTrackSummary[]>([]);
     const [loading, setLoading] = useState(false);
     const [importing, setImporting] = useState<ScrapeRequest | null>(null);
     const [recentSearches, setRecentSearches] = useState<RecentSearch[]>(loadRecentSearches);
@@ -46,6 +45,8 @@ function SearchPage() {
 
     useEffect(() => {
         if (trimmed.length < 2) {
+            // setLocalResults([]);
+            // setExternalResults([]);
             return;
         }
 
@@ -62,8 +63,9 @@ function SearchPage() {
                 );
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-                const data: LastFmTrackSummary[] = await res.json();
-                setResults(data);
+                const data: SongSearchResponse = await res.json();
+                setLocalResults(data.localMatches ?? []);
+                setExternalResults(data.externalMatches ?? []);
             } catch (err) {
                 if ((err as Error).name !== "AbortError") console.error(err);
             } finally {
@@ -74,16 +76,15 @@ function SearchPage() {
         return () => clearTimeout(timer);
     }, [trimmed]);
 
-    const visibleResults = trimmed.length < 2 ? [] : results;
+    const showResults = trimmed.length >= 2;
 
-    function rememberSearch(track: LastFmTrackSummary, songId: number) {
+    function rememberSearch(artist: string, name: string, imageUrl: string | undefined, songId: number) {
         setRecentSearches((prev) => {
-            // De-dupe by artist+name, most recent first, capped at MAX_RECENT
             const withoutDupe = prev.filter(
-                (r) => !(r.artist === track.artist && r.name === track.name)
+                (r) => !(r.artist === artist && r.name === name)
             );
             const next = [
-                { artist: track.artist, name: track.name, imageUrl: track.imageUrl, songId },
+                { artist, name, imageUrl, songId },
                 ...withoutDupe,
             ].slice(0, MAX_RECENT);
             saveRecentSearches(next);
@@ -96,7 +97,12 @@ function SearchPage() {
         saveRecentSearches([]);
     }
 
-    async function handleSelect(track: LastFmTrackSummary) {
+    function handleSelectLocal(match: LocalSongMatch) {
+        rememberSearch(match.artistName, match.name, match.albumArtUrl, match.id);
+        navigate(`/song/${match.id}`);
+    }
+
+    async function handleSelectExternal(track: LastFmTrackSummary) {
         setImporting({ id: -1, query: `${track.artist} - ${track.name}`, status: "Pending" });
 
         try {
@@ -112,7 +118,7 @@ function SearchPage() {
             setImporting(scrapeRequest);
 
             if (scrapeRequest.status === "Completed" && scrapeRequest.resultSongId) {
-                rememberSearch(track, scrapeRequest.resultSongId);
+                rememberSearch(track.artist, track.name, track.imageUrl, scrapeRequest.resultSongId);
                 navigate(`/song/${scrapeRequest.resultSongId}`);
             } else {
                 pollStatus(scrapeRequest.id, track);
@@ -134,7 +140,7 @@ function SearchPage() {
 
                 if (updated.status === "Completed" && updated.resultSongId) {
                     clearInterval(interval);
-                    rememberSearch(track, updated.resultSongId);
+                    rememberSearch(track.artist, track.name, track.imageUrl, updated.resultSongId);
                     navigate(`/song/${updated.resultSongId}`);
                 } else if (updated.status === "Failed") {
                     clearInterval(interval);
@@ -146,7 +152,26 @@ function SearchPage() {
         }, 1500);
     }
 
-    function trackToSong(track: LastFmTrackSummary): Song {
+    function localMatchToSong(match: LocalSongMatch): Song {
+        return {
+            id: match.id,
+            name: match.name,
+            primaryArtist: {
+                id: -1,
+                name: match.artistName,
+                imageUrl: match.albumArtUrl
+            },
+            featuredArtists: [],
+            bpm: 0,
+            releaseDate: new Date().toISOString(),
+            instrumentType: "AcousticGuitar",
+            albumArtUrl: match.albumArtUrl,
+            genres: [],
+            versions: []
+        };
+    }
+
+    function externalTrackToSong(track: LastFmTrackSummary): Song {
         return {
             id: -1,
             name: track.name,
@@ -168,19 +193,17 @@ function SearchPage() {
     return (
         <div className="search-page">
             <h1>Search Songs</h1>
-            <p className="page-subtitle">Find a song to add to your library</p>
+            <p className="page-subtitle">Find a song to add to your library — by title, artist, or lyric</p>
 
             <input
                 className="search-input"
                 type="text"
-                placeholder="Search by song or artist..."
+                placeholder="Search by song, artist, or lyric..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
             />
 
-            {/* Only show recent searches on the empty/pre-search state —
-                once someone's actively typing, live results take over */}
-            {trimmed.length < 2 && recentSearches.length > 0 && (
+            {!showResults && recentSearches.length > 0 && (
                 <div className="recent-searches">
                     <div className="recent-searches-header">
                         <h2>Recent</h2>
@@ -216,19 +239,39 @@ function SearchPage() {
 
             {loading && <p className="empty-state">Searching…</p>}
 
-            {!loading && visibleResults.length === 0 && trimmed.length >= 2 && (
-                <p className="empty-state">No matches on Last.fm for "{query}".</p>
+            {!loading && showResults && localResults.length === 0 && externalResults.length === 0 && (
+                <p className="empty-state">No matches for "{query}".</p>
             )}
 
-            <div className="vinyl-grid">
-                {visibleResults.map((track) => (
-                    <SongCard
-                        key={`${track.artist}-${track.name}`}
-                        song={trackToSong(track)}
-                        onClick={() => handleSelect(track)}
-                    />
-                ))}
-            </div>
+            {!loading && showResults && localResults.length > 0 && (
+                <>
+                    <h2 className="results-section-heading">In your library</h2>
+                    <div className="vinyl-grid">
+                        {localResults.map((match) => (
+                            <SongCard
+                                key={`local-${match.id}`}
+                                song={localMatchToSong(match)}
+                                onClick={() => handleSelectLocal(match)}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
+
+            {!loading && showResults && externalResults.length > 0 && (
+                <>
+                    <h2 className="results-section-heading">Add from Last.fm</h2>
+                    <div className="vinyl-grid">
+                        {externalResults.map((track) => (
+                            <SongCard
+                                key={`external-${track.artist}-${track.name}`}
+                                song={externalTrackToSong(track)}
+                                onClick={() => handleSelectExternal(track)}
+                            />
+                        ))}
+                    </div>
+                </>
+            )}
         </div>
     );
 }

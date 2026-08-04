@@ -1,9 +1,11 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Models;
 
 namespace RiffForge.Server.Data
 {
-    public class RiffForgeDbContext : DbContext
+    public class RiffForgeDbContext :  IdentityDbContext<IdentityUser>
     {
         public RiffForgeDbContext(DbContextOptions<RiffForgeDbContext> options)
             : base(options) { }
@@ -24,6 +26,8 @@ namespace RiffForge.Server.Data
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             base.OnModelCreating(modelBuilder);
+
+            modelBuilder.HasPostgresExtension("pg_trgm");
 
             // Song -> PrimaryArtist
             modelBuilder.Entity<Song>()
