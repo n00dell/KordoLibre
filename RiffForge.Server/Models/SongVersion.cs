@@ -44,6 +44,7 @@ namespace RiffForge.Server.Models
         [MaxLength(100)]
         public string? SourceName { get; set; }
 
+        public NotationType NotationType { get; set; }
         public DateTime DateScraped { get; set; } = DateTime.UtcNow;
 
         public ICollection<Chord> Chords { get; set; } = new List<Chord>();

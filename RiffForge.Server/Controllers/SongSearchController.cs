@@ -16,13 +16,15 @@ namespace RiffForge.Server.Controllers
     {
         private readonly ILastFmService _lastFm;
         private readonly ILyricsService _lyrics;
-        private readonly RiffForgeDbContext _db; // however your DbContext is named
+        private readonly RiffForgeDbContext _db;
+        private readonly IGeminiChordService _geminiChordService;
 
-        public SongSearchController(ILastFmService lastFm, ILyricsService lyrics,RiffForgeDbContext db)
+        public SongSearchController(ILastFmService lastFm, ILyricsService lyrics,RiffForgeDbContext db, IGeminiChordService geminiChordService)
         {
             _lastFm = lastFm;
             _db = db;
             _lyrics = lyrics;
+            _geminiChordService = geminiChordService;
         }
 
         [HttpGet]
@@ -85,9 +87,8 @@ namespace RiffForge.Server.Controllers
                 ExternalMatches = externalResults
             });
         }
-        private static string Normalize(string input) =>
-    string.IsNullOrWhiteSpace(input) ? string.Empty : input.Trim().ToLowerInvariant();
-        public record ImportRequest(string Artist, string Track);
+ 
+        public record ImportRequest(string Artist, string Track, string? UserId = null);
 
         // POST /api/songsearch/import  { artist, track }
         // Fires when the user taps a search result. This is the hinge point:
@@ -128,6 +129,14 @@ namespace RiffForge.Server.Controllers
                 await _db.SaveChangesAsync(ct);
 
                 return Ok(completedReq);
+            }
+
+            var userSkillLevel = Difficulty.Intermediate;
+            if (!string.IsNullOrEmpty(req.UserId))
+            {
+                var userProfile = await _db.UserProfiles
+                    .FirstOrDefaultAsync(u => u.UserId == req.UserId, ct);
+                if (userProfile != null) userSkillLevel = userProfile.SkillLevel;
             }
 
             // ==========================================
@@ -202,24 +211,68 @@ namespace RiffForge.Server.Controllers
                 AlbumArtUrl = detail.ImageUrl,
                 Lyrics = lyricsText,
                 BPM = 120,
-                ReleaseDate = DateTime.UtcNow
+                ReleaseDate = DateTime.UtcNow,
+                LastUpdated = DateTime.UtcNow
             };
             _db.Songs.Add(song);
             await _db.SaveChangesAsync(ct);
+            // 5. Generate Chord Versions via Gemini
+            var generatedChords = await _geminiChordService.GenerateChordsAsync(
+    artist.Name, song.Name, lyricsText, Difficulty.Intermediate, ct);
 
-            // Create Default Version with Lyrics
-            var version = new SongVersion
+            if (generatedChords?.OriginalVersion != null && generatedChords?.AlternateVersion != null)
             {
-                SongId = song.Id,
-                Difficulty = Difficulty.Intermediate,
-                Tuning = Tuning.Standard,
-                CapoPos = CapoPos.None,
-                StrumPattern = StrumPattern.DownDownUp,
-                IsDefault = true,
-                TabData = lyricsText ?? string.Empty
-            };
-            _db.SongVersions.Add(version);
+                // 1. Target / Original Accurate Version
+                var originalVer = new SongVersion
+                {
+                    SongId = song.Id,
+                    TabData = generatedChords.OriginalVersion.TabData,
+                    StrumPattern = generatedChords.OriginalVersion.StrumPattern,
+                    Tuning = generatedChords.OriginalVersion.Tuning,
+                    CapoPos = generatedChords.OriginalVersion.CapoPos,
+                    Difficulty = generatedChords.OriginalVersion.Difficulty,
+                    IsDefault = true,
+                    SourceName = "Gemini AI (Original Accurate)",
+                    DateScraped = DateTime.UtcNow
+                };
 
+                // 2. Alternate Version
+                var altVer = new SongVersion
+                {
+                    SongId = song.Id,
+                    TabData = generatedChords.AlternateVersion.TabData,
+                    StrumPattern = generatedChords.AlternateVersion.StrumPattern,
+                    Tuning = generatedChords.AlternateVersion.Tuning,
+                    CapoPos = generatedChords.AlternateVersion.CapoPos,
+                    Difficulty = generatedChords.AlternateVersion.Difficulty,
+                    IsDefault = false,
+                    SourceName = "Gemini AI (Simplified Alt)",
+                    DateScraped = DateTime.UtcNow
+                };
+                originalVer.Chords = await ResolveChordsAsync(
+    generatedChords.OriginalVersion.ChordDefinitions, originalVer.Tuning, originalVer.Difficulty, ct);
+                altVer.Chords = await ResolveChordsAsync(
+                    generatedChords.AlternateVersion.ChordDefinitions, altVer.Tuning, altVer.Difficulty, ct);
+                originalVer.NotationType = generatedChords.OriginalVersion.NotationType;
+                altVer.NotationType = generatedChords.AlternateVersion.NotationType;
+
+                _db.SongVersions.Add(originalVer);
+                _db.SongVersions.Add(altVer);
+            }
+            else
+            {
+                // Fallback version if Gemini is unavailable
+                _db.SongVersions.Add(new SongVersion
+                {
+                    SongId = song.Id,
+                    Difficulty = userSkillLevel,
+                    Tuning = Tuning.Standard,
+                    CapoPos = CapoPos.None,
+                    StrumPattern = StrumPattern.DownDownUp,
+                    IsDefault = true,
+                    TabData = lyricsText ?? string.Empty
+                });
+            }
             // Create ScrapeRequest
             var scrapeRequest = new ScrapeRequest
             {
@@ -229,6 +282,7 @@ namespace RiffForge.Server.Controllers
                 RequestedAt = DateTime.UtcNow,
                 CompletedAt = DateTime.UtcNow
             };
+
             _db.ScrapeRequests.Add(scrapeRequest);
             await _db.SaveChangesAsync(ct);
 
@@ -256,6 +310,43 @@ namespace RiffForge.Server.Controllers
         {
             var req = await _db.ScrapeRequests.FindAsync(id);
             return req is null ? NotFound() : Ok(req);
+        }
+
+        private static string Normalize(string input) =>
+    string.IsNullOrWhiteSpace(input) ? string.Empty : input.Trim().ToLowerInvariant();
+
+        private async Task<List<Chord>> ResolveChordsAsync(
+            List<ChordDefinition> defs, Tuning tuning, Difficulty difficulty, CancellationToken ct)
+        {
+            var chords = new List<Chord>();
+            foreach (var def in defs)
+            {
+                var normName = Normalize(def.Name);
+                var chord = await _db.Chords.FirstOrDefaultAsync(c => c.NormalizedName == normName, ct);
+
+                if (chord == null)
+                {
+                    chord = new Chord
+                    {
+                        Name = def.Name,
+                        NormalizedName = normName,
+                        FretPositions = def.Frets,
+                        IsBarreChord = def.IsBarre,
+                        Tuning = tuning,
+                        Difficulty = difficulty,
+                        SourceName = "Gemini AI"
+                    };
+                    _db.Chords.Add(chord);
+                    await _db.SaveChangesAsync(ct); // avoid duplicate inserts within the same request
+                }
+                else if (string.IsNullOrWhiteSpace(chord.FretPositions))
+                {
+                    chord.FretPositions = def.Frets; // backfill if we'd only seen the name before
+                }
+
+                chords.Add(chord);
+            }
+            return chords;
         }
     }
 }

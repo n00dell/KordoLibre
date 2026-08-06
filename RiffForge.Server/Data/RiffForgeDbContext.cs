@@ -85,9 +85,13 @@ namespace RiffForge.Server.Data
                 .Property(sv => sv.Rating)
                 .HasPrecision(3, 2);
 
+            modelBuilder.Entity<SongVersion>()
+        .HasIndex(v => v.SongId)
+        .IsUnique(false);
+
             // Only one default version per song
             modelBuilder.Entity<SongVersion>()
-                .HasIndex(sv => sv.SongId)
+                .HasIndex(sv => new { sv.SongId, sv.IsDefault })
                 .HasFilter("\"IsDefault\" = true")
                 .IsUnique();
             modelBuilder.Entity<UserProfile>()

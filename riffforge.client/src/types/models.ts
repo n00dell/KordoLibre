@@ -58,6 +58,7 @@ export interface SongVersion {
     sourceUrl?: string;
     sourceName?: string;
     chords: Chord[];
+    notationType?: number;
     techniques: Technique[];
 }
 

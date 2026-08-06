@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RiffForge.Server.Data;
@@ -11,9 +12,11 @@ using RiffForge.Server.Data;
 namespace RiffForge.Server.Migrations
 {
     [DbContext(typeof(RiffForgeDbContext))]
-    partial class RiffForgeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260806085457_UpdateSongScrape")]
+    partial class UpdateSongScrape
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -545,9 +548,6 @@ namespace RiffForge.Server.Migrations
                     b.Property<bool>("IsDefault")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("NotationType")
-                        .HasColumnType("integer");
-
                     b.Property<decimal>("Rating")
                         .HasPrecision(3, 2)
                         .HasColumnType("numeric(3,2)");
@@ -581,11 +581,11 @@ namespace RiffForge.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("SongId");
-
-                    b.HasIndex("SongId", "IsDefault")
+                    b.HasIndex("SongId")
                         .IsUnique()
                         .HasFilter("\"IsDefault\" = true");
+
+                    b.HasIndex("SongId", "IsDefault");
 
                     b.ToTable("SongVersions");
                 });

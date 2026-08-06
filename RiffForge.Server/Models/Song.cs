@@ -1,7 +1,8 @@
-﻿using RiffForge.Server.Models.Enums;
+﻿using Microsoft.EntityFrameworkCore;
+using RiffForge.Server.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
+using System.Diagnostics;
 
 
 namespace RiffForge.Server.Models
@@ -38,7 +39,8 @@ namespace RiffForge.Server.Models
         public InstrumentType InstrumentType { get; set; }
 
         public DateTime DateAdded { get; set; } = DateTime.UtcNow;
-
+        // Tracks chord freshness(7-day re-scrape trigger)
+        public DateTime LastUpdated { get; set; } = DateTime.UtcNow;
         public ICollection<Genre> Genres { get; set; } = new List<Genre>();
 
         public ICollection<SongVersion> Versions { get; set; } = new List<SongVersion>();
@@ -47,7 +49,8 @@ namespace RiffForge.Server.Models
         public string FullDisplayName => $"{Name} - {PrimaryArtist?.Name ?? "Unknown"}";
 
         [NotMapped]
-        public SongVersion? DefaultVersion => Versions?.FirstOrDefault(v => v.IsDefault);
+        public SongVersion? DefaultVersion => Versions?.FirstOrDefault(v => v.IsDefault)
+                                               ?? Versions?.FirstOrDefault();
 
     }
     

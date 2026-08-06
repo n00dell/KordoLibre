@@ -20,6 +20,10 @@ builder.Services.AddDbContext<RiffForgeDbContext>(options =>
 builder.Services.AddHttpClient<ILastFmService, LastFmService>();
 builder.Services.AddHttpClient<IAlbumArtService, AlbumArtService>();
 builder.Services.AddHttpClient<ILyricsService, LyricsService>();
+builder.Services.AddHttpClient<IGeminiChordService, GeminiChordService>(client =>
+{
+    client.Timeout = TimeSpan.FromMinutes(3); // Increase timeout from default 100s to 3 minutes
+});
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
     // Defaults are quite strict (upper+lower+digit+special, 6 char min).

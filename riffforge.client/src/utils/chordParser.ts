@@ -4,18 +4,21 @@ export interface ChordSegment {
 }
 
 export function parseChordLine(line: string): ChordSegment[] {
+    const regex = /\[([^\]]+)\]/g;
     const segments: ChordSegment[] = [];
-    // Updated regex: removed the unnecessary backslash inside [^[]+
-    const regex = /(?:\[(.*?)\])?([^[]+)/g;
-    let match;
+    let lastIndex = 0;
+    let match: RegExpExecArray | null;
 
     while ((match = regex.exec(line)) !== null) {
-        if (match[1] || match[2]) {
-            segments.push({
-                chord: match[1] || undefined,
-                lyric: match[2] || "",
-            });
+        if (match.index > lastIndex) {
+            segments.push({ lyric: line.substring(lastIndex, match.index) });
         }
+        segments.push({ chord: match[1], lyric: "" });
+        lastIndex = regex.lastIndex;
+    }
+
+    if (lastIndex < line.length) {
+        segments.push({ lyric: line.substring(lastIndex) });
     }
 
     return segments.length > 0 ? segments : [{ lyric: line }];

@@ -1,9 +1,7 @@
+// src/pages/SongVersionsPage.tsx
 import { useParams, Link } from "react-router-dom";
 import { sampleSongs } from "../data/sampleData";
 
-// A dedicated page for browsing every community-submitted SongVersion for
-// one Song — separate from SongDetailPage, which only ever shows one
-// version at a time. This is the "pick which take you want to learn" screen.
 function SongVersionsPage() {
     const { id } = useParams<{ id: string }>();
     const song = sampleSongs.find((s) => s.id === Number(id));
@@ -17,8 +15,6 @@ function SongVersionsPage() {
         );
     }
 
-    // Sort by rating so the most-loved version leads — same "best version"
-    // sort your SongVersion.RatingCount comment describes.
     const sortedVersions = [...song.versions].sort((a, b) => b.rating - a.rating);
 
     return (
@@ -36,7 +32,7 @@ function SongVersionsPage() {
                 {sortedVersions.map((v) => (
                     <Link key={v.id} to={`/song/${song.id}/version/${v.id}`} className="version-card">
                         <div className="version-card-top">
-                            <span className={`difficulty-pill difficulty-${v.difficulty.toLowerCase()}`}>{v.difficulty}</span>
+                            <span className={`difficulty-pill difficulty-${String(v.difficulty).toLowerCase()}`}>{v.difficulty}</span>
                             {v.isDefault && <span className="default-badge">Default</span>}
                             <span className="version-rating">★ {v.rating.toFixed(1)}</span>
                         </div>
@@ -44,7 +40,7 @@ function SongVersionsPage() {
                         <div className="version-card-meta">
                             <span>{v.tuning}</span>
                             <span>·</span>
-                            <span>Capo {v.capoPos === "None" ? "none" : v.capoPos.replace("Fret", "")}</span>
+                            <span>Capo {String(v.capoPos) === "None" || String(v.capoPos) === "0" ? "none" : String(v.capoPos)}</span>
                             <span>·</span>
                             <span>{v.strumPattern}</span>
                         </div>

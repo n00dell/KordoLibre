@@ -1,26 +1,92 @@
-import { parseChordLine } from "../utils/chordParser";
+// src/components/ChordLyricLine.tsx
+import { useState } from "react";
+import ChordDiagram from "./ChordDiagram";
 
-interface ChordLyricLineProps {
-    line: string;
+export interface ChordFretInfo {
+    fretPositions: string;
+    isBarreChord?: boolean;
 }
 
-function ChordLyricLine({ line }: ChordLyricLineProps) {
+interface Props {
+    line: string;
+    chordFrets: Record<string, ChordFretInfo>;
+}
+
+interface Segment {
+    chord: string | null;
+    text: string;
+}
+
+function parseLine(rawLine: string): Segment[] {
+    const regex = /\[([^\]]+)\]/g;
+    const segments: Segment[] = [];
+    let lastIndex = 0;
+    let pendingChord: string | null = null;
+    let match: RegExpExecArray | null;
+
+    while ((match = regex.exec(rawLine)) !== null) {
+        const textBefore = rawLine.slice(lastIndex, match.index);
+        if (textBefore || pendingChord) {
+            segments.push({ chord: pendingChord, text: textBefore });
+        }
+        pendingChord = match[1];
+        lastIndex = regex.lastIndex;
+    }
+    segments.push({ chord: pendingChord, text: rawLine.slice(lastIndex) });
+    return segments.length ? segments : [{ chord: null, text: rawLine }];
+}
+
+export default function ChordLyricLine({ line, chordFrets }: Props) {
+    const [hovered, setHovered] = useState<string | null>(null);
+
     if (!line.trim()) {
-        return <div className="chord-line-space" />;
+        return <div style={{ height: "1.4em" }} />;
     }
 
-    const segments = parseChordLine(line);
+    const segments = parseLine(line);
 
     return (
-        <div className="chord-lyric-line">
-            {segments.map((seg, idx) => (
-                <span key={idx} className="chord-segment">
-                    <span className="chord-label">{seg.chord || ""}</span>
-                    <span className="lyric-label">{seg.lyric}</span>
+        <div style={{ position: "relative", lineHeight: "2.3em", marginBottom: "0.2em" }}>
+            {segments.map((seg, i) => (
+                <span key={i} style={{ position: "relative", whiteSpace: "pre-wrap" }}>
+                    {seg.chord && (
+                        <span
+                            onMouseEnter={() => setHovered(seg.chord)}
+                            onMouseLeave={() => setHovered(null)}
+                            style={{
+                                position: "absolute",
+                                top: "-1.35em",
+                                left: 0,
+                                color: "var(--accent, #f97316)",
+                                fontWeight: 700,
+                                fontSize: "0.85em",
+                                cursor: "default"
+                            }}
+                        >
+                            {seg.chord}
+                            {hovered === seg.chord && chordFrets[seg.chord] && (
+                                <span
+                                    style={{
+                                        position: "absolute",
+                                        bottom: "135%",
+                                        left: 0,
+                                        zIndex: 200,
+                                        boxShadow: "0 10px 25px rgba(0,0,0,0.6)"
+                                    }}
+                                >
+                                    <ChordDiagram
+                                        name={seg.chord}
+                                        frets={chordFrets[seg.chord].fretPositions}
+                                        isBarreChord={chordFrets[seg.chord].isBarreChord}
+                                        scale={0.85}
+                                    />
+                                </span>
+                            )}
+                        </span>
+                    )}
+                    {seg.text}
                 </span>
             ))}
         </div>
     );
 }
-
-export default ChordLyricLine;
