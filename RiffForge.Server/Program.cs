@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Data;
 using RiffForge.Server.Services;
 using RiffForge.Server.Services.Interfaces;
+using RiffForge.Server.Services.Validation;
 using System.Text.Json.Serialization;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -17,13 +18,19 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<RiffForgeDbContext>(options =>
     options.UseNpgsql(connectionString));
+builder.Services.Configure<AiSettings>(builder.Configuration.GetSection("Ai"));
 builder.Services.AddHttpClient<ILastFmService, LastFmService>();
 builder.Services.AddHttpClient<IAlbumArtService, AlbumArtService>();
 builder.Services.AddHttpClient<ILyricsService, LyricsService>();
-builder.Services.AddHttpClient<IGeminiChordService, GeminiChordService>(client =>
-{
-    client.Timeout = TimeSpan.FromMinutes(3); // Increase timeout from default 100s to 3 minutes
-});
+builder.Services.AddScoped<IChordGenerationProvider, GeminiChordService>();
+builder.Services.AddScoped<IChordGenerationProvider, ClaudeChordProvider>();
+builder.Services.AddScoped<ChordArrangementValidator>();
+builder.Services.AddScoped<IChordProviderFactory, ChordProviderFactory>();
+builder.Services.AddScoped<IApiKeyProtector, ApiKeyProtector>();
+builder.Services.AddHttpClient<GeminiChordService>()
+    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
+builder.Services.AddHttpClient<ClaudeChordProvider>()
+    .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
 {
     // Defaults are quite strict (upper+lower+digit+special, 6 char min).
@@ -57,7 +64,7 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("Frontend", policy =>
     {
-        policy.WithOrigins("https://localhost:7054") // adjust to your actual dev server
+        policy.WithOrigins("https://localhost:56315") // adjust to your actual dev server
               .AllowAnyHeader()
               .AllowAnyMethod()
               .AllowCredentials();

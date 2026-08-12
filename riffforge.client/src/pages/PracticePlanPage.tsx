@@ -1,12 +1,12 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { sampleSongs } from "../data/sampleData";
-import type { UserProfile, UserSongProgress } from "../types/models";
+import type { PracticeProfile, UserSongProgress } from "../types/models";
 import { Difficulty, TechniqueCategory } from "../types/enums";
 
 // Stand-ins for GET /api/profile and GET /api/progress. In a real app these
 // would come from useState + useEffect, same pattern as LibraryPage's comment.
-const sampleProfile: UserProfile = {
+const sampleProfile: PracticeProfile = {
     id: 1,
     userId: "user-1",
     skillLevel: Difficulty.Intermediate,
@@ -23,7 +23,7 @@ const sampleProgress: UserSongProgress[] = [
 ];
 
 function PracticePlanPage() {
-    const [profile] = useState<UserProfile>(sampleProfile);
+    const [profile] = useState<PracticeProfile>(sampleProfile);
     const [progress] = useState<UserSongProgress[]>(sampleProgress);
 
     // Join progress rows back to their parent Song, the way a SQL join would —

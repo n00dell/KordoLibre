@@ -6,6 +6,8 @@ using RiffForge.Server.Models;
 using RiffForge.Server.Models.DTOs;
 using RiffForge.Server.Models.Enums;
 using RiffForge.Server.Models.LastFm;
+using RiffForge.Server.Services;
+using RiffForge.Server.Services.Exceptions;
 using RiffForge.Server.Services.Interfaces;
 
 namespace RiffForge.Server.Controllers
@@ -17,14 +19,18 @@ namespace RiffForge.Server.Controllers
         private readonly ILastFmService _lastFm;
         private readonly ILyricsService _lyrics;
         private readonly RiffForgeDbContext _db;
-        private readonly IGeminiChordService _geminiChordService;
+        private readonly IChordProviderFactory _chordFactory;
+        private readonly ILogger<SongSearchController> _logger;
+        private readonly AiProviderResolver _aiProviderResolver;
 
-        public SongSearchController(ILastFmService lastFm, ILyricsService lyrics,RiffForgeDbContext db, IGeminiChordService geminiChordService)
+        public SongSearchController(ILastFmService lastFm, ILyricsService lyrics,RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongSearchController> logger, AiProviderResolver aiProviderResolver)
         {
             _lastFm = lastFm;
             _db = db;
             _lyrics = lyrics;
-            _geminiChordService = geminiChordService;
+            _chordFactory = chordFactory;
+            _aiProviderResolver = aiProviderResolver;
+            _logger = logger;
         }
 
         [HttpGet]
@@ -216,12 +222,28 @@ namespace RiffForge.Server.Controllers
             };
             _db.Songs.Add(song);
             await _db.SaveChangesAsync(ct);
-            // 5. Generate Chord Versions via Gemini
-            var generatedChords = await _geminiChordService.GenerateChordsAsync(
-    artist.Name, song.Name, lyricsText, Difficulty.Intermediate, ct);
+            var (providerKey, apiKey) = await _aiProviderResolver.ResolveAsync(req.UserId, ct);
+
+            GeminiChordResponse? generatedChords = null;
+            try
+            {
+                generatedChords = await _chordFactory.GenerateChordsAsync(
+                    artist.Name, song.Name, lyricsText, Difficulty.Intermediate,
+                    preferredProviderKey: providerKey, apiKeyOverride: apiKey, ct);
+            }
+            catch (AllProvidersFailedException ex)
+            {
+                _logger.LogWarning(ex, "All AI providers failed generating chords for {Artist} - {Track}; falling back to lyrics-only version.",
+                    artist.Name, song.Name);
+            }
 
             if (generatedChords?.OriginalVersion != null && generatedChords?.AlternateVersion != null)
             {
+                if (generatedChords.EstimatedBpm > 0)
+                {
+                    song.BPM = generatedChords.EstimatedBpm; // picked up by the SaveChangesAsync below
+                }
+
                 // 1. Target / Original Accurate Version
                 var originalVer = new SongVersion
                 {

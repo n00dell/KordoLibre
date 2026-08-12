@@ -22,6 +22,7 @@ namespace RiffForge.Server.Data
         public DbSet<ScrapeRequest> ScrapeRequests { get; set; }
 
         public DbSet<SongVersion> SongVersions { get; set; }
+        public DbSet<UserAiProviderKey> UserAiProviderKeys { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

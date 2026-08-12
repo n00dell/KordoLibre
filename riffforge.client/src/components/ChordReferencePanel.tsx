@@ -6,9 +6,10 @@ import type { ChordItem } from "./ChordHoverBar";
 interface Props {
     chords: ChordItem[];
     strumPattern: string | number;
+    bpm?: number;
 }
 
-export default function ChordReferencePanel({ chords, strumPattern }: Props) {
+export default function ChordReferencePanel({ chords, strumPattern, bpm }: Props) {
     return (
         <div
             style={{
@@ -16,14 +17,13 @@ export default function ChordReferencePanel({ chords, strumPattern }: Props) {
                 top: "110px",
                 right: "24px",
                 width: "300px",
-                maxHeight: "calc(100vh - 140px)",
                 display: "flex",
                 flexDirection: "column",
                 gap: "14px",
                 zIndex: 20
             }}
         >
-            <StrumPatternCard pattern={strumPattern} />
+            <StrumPatternCard pattern={strumPattern} bpm={bpm} />
 
             <div
                 style={{

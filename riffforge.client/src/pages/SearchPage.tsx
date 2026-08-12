@@ -111,7 +111,12 @@ function SearchPage() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ artist: track.artist, track: track.name }),
             });
-
+            if (res.status === 503) {
+                const message = await res.text(); // controller sends the message as the body, not JSON
+                throw new AiGenerationUnavailableError(
+                    message || "Couldn't generate that version right now — the AI provider is unavailable. Try again shortly."
+                );
+            }
             if (!res.ok) throw new Error(`Import failed with status ${res.status}`);
 
             const scrapeRequest: ScrapeRequest = await res.json();
@@ -275,5 +280,5 @@ function SearchPage() {
         </div>
     );
 }
-
+class AiGenerationUnavailableError extends Error { }
 export default SearchPage;

@@ -12,7 +12,6 @@ import TapeDeckPlayer from "../components/TapeDeckPlayer";
 import TabBlock from "../components/TabBlock";
 import { fetchLibraryStatus, addToLibrary, removeFromLibrary } from "../api/library";
 
-// Expanded chord fret lookup map to prevent 000000 diagram fallbacks
 const COMMON_CHORD_FRETS: Record<string, { frets: string; isBarreChord: boolean }> = {
     C: { frets: "x32010", isBarreChord: false },
     G: { frets: "320003", isBarreChord: false },
@@ -23,19 +22,41 @@ const COMMON_CHORD_FRETS: Record<string, { frets: string; isBarreChord: boolean 
     E: { frets: "022100", isBarreChord: false },
     A: { frets: "x02220", isBarreChord: false },
     Dm: { frets: "xx0231", isBarreChord: false },
+    B: { frets: "x24442", isBarreChord: true },
     Bm: { frets: "x24432", isBarreChord: true },
+    Cm: { frets: "x35543", isBarreChord: true },
+    "C#m": { frets: "x46654", isBarreChord: true },
+    "F#m": { frets: "244222", isBarreChord: true },
+    "G#m": { frets: "466444", isBarreChord: true },
+    Bb: { frets: "x13331", isBarreChord: true },
+    Gm: { frets: "355333", isBarreChord: true },
     C7: { frets: "x32310", isBarreChord: false },
     G7: { frets: "320001", isBarreChord: false },
+    A7: { frets: "x02020", isBarreChord: false },
+    E7: { frets: "020100", isBarreChord: false },
+    D7: { frets: "xx0212", isBarreChord: false },
+    B7: { frets: "x21202", isBarreChord: false },
     Dmaj7: { frets: "xx0222", isBarreChord: false },
     Gmaj7: { frets: "320002", isBarreChord: false },
-    Fm7: { frets: "131111", isBarreChord: true },
-    "F#m7": { frets: "242222", isBarreChord: true },
-    Em7: { frets: "022030", isBarreChord: false },
-    Bm7: { frets: "x24232", isBarreChord: true },
     Amaj7: { frets: "x02120", isBarreChord: false },
     Cadd9: { frets: "x32033", isBarreChord: false },
-    Bb: { frets: "x13331", isBarreChord: true },
-    Gm: { frets: "355333", isBarreChord: true }
+    // Flat Major Chords
+    Db: { frets: "x46664", isBarreChord: true },
+    Eb: { frets: "x68886", isBarreChord: true },
+    Ab: { frets: "466544", isBarreChord: true },
+
+    // Minor Chords
+    Fm: { frets: "133111", isBarreChord: true },
+    Bbm: { frets: "x13321", isBarreChord: true },
+    Ebm: { frets: "x68876", isBarreChord: true },
+    Abm: { frets: "466444", isBarreChord: true },
+    Dbm: { frets: "x46654", isBarreChord: true },
+
+    // Dominant & Minor 7ths
+    Eb7: { frets: "x68686", isBarreChord: true },
+    Bbm7: { frets: "x13121", isBarreChord: true },
+    Fm7: { frets: "131111", isBarreChord: true },
+    Ab7: { frets: "464544", isBarreChord: true }
 };
 
 // Helper to detect if the content looks like tablature
@@ -52,10 +73,31 @@ const looksLikeTab = (text: string): boolean => {
 };
 
 // Also create a helper to get the full chord info
+const ROOT_POSITIONS: Record<string, number> = {
+    C: 3, "C#": 4, Db: 4, D: 5, "D#": 6, Eb: 6, E: 7, F: 1, "F#": 2, Gb: 2, G: 3, "G#": 4, Ab: 4, A: 0, "A#": 1, Bb: 1, B: 2
+};
+
+function getMovableBarre(name: string): { frets: string; isBarreChord: boolean } {
+    const isMinor = name.includes("m") && !name.includes("maj");
+    const is7 = name.includes("7");
+    const rootMatch = name.match(/^[A-G][b#]?/);
+    if (!rootMatch) return { frets: "x00000", isBarreChord: false };
+
+    const root = rootMatch[0];
+    const fret = ROOT_POSITIONS[root] ?? 1;
+
+    // Generate standard 5th-string root barre shape (A/Am style)
+    if (isMinor && is7) return { frets: `x${fret}${fret + 2}${fret}${fret + 1}${fret}`, isBarreChord: true };
+    if (isMinor) return { frets: `x${fret}${fret + 2}${fret + 2}${fret + 1}${fret}`, isBarreChord: true };
+    if (is7) return { frets: `x${fret}${fret + 2}${fret}${fret + 2}${fret}`, isBarreChord: true };
+
+    return { frets: `x${fret}${fret + 2}${fret + 2}${fret + 2}${fret}`, isBarreChord: true };
+}
+
 const lookupChordInfo = (name: string): { frets: string; isBarreChord: boolean } =>
     COMMON_CHORD_FRETS[name] ??
     Object.entries(COMMON_CHORD_FRETS).find(([k]) => k.toLowerCase() === name.toLowerCase())?.[1] ??
-    { frets: "x00000", isBarreChord: false };
+    getMovableBarre(name);
 
 function SongDetailPage() {
     const { id, versionId } = useParams<{ id: string; versionId?: string }>();
@@ -65,6 +107,8 @@ function SongDetailPage() {
     const [loading, setLoading] = useState(true);
     const [inLibrary, setInLibrary] = useState(false);
     const [libraryBusy, setLibraryBusy] = useState(false);
+    const [generatingNotation, setGeneratingNotation] = useState(false);
+
 
     useEffect(() => {
         if (!id) return;
@@ -122,28 +166,38 @@ function SongDetailPage() {
     const uniqueChords = useMemo<ChordItem[]>(() => {
         if (!selectedVersion) return [];
 
-        // 1. Relational database chords
-        if (selectedVersion.chords && selectedVersion.chords.length > 0) {
-            const mapped = selectedVersion.chords.map((c) => ({
-                name: c.name,
-                fretPositions: c.fretPositions || COMMON_CHORD_FRETS[c.name]?.frets || "x00000",
-                isBarreChord: c.isBarreChord ?? COMMON_CHORD_FRETS[c.name]?.isBarreChord ?? false
-            }));
-            return Array.from(new Map(mapped.map((c) => [c.name, c])).values());
-        }
-
-        // 2. Parse inline Gemini bracket chords e.g., [Dmaj7]
+        const chordMap = new Map<string, ChordItem>();
         const tabText = selectedVersion.tabData || "";
         const matches = tabText.match(/\[([A-G][b#]?[\w#/]*)\]/g) || [];
-        const rawNames = Array.from(new Set(matches.map((m) => m.replace(/\[|\]/g, ""))));
-        return rawNames.map((name) => {
-            const info = lookupChordInfo(name);
-            return {
+        const extractedNames = Array.from(new Set(matches.map((m) => m.replace(/\[|\]/g, ""))));
+
+        // Combine DB chords and extracted bracketed chords
+        const allNames = new Set([
+            ...(selectedVersion.chords || []).map((c) => c.name),
+            ...extractedNames
+        ]);
+
+        allNames.forEach((name) => {
+            const dbChord = (selectedVersion.chords || []).find((c) => c.name === name);
+            const standardInfo = lookupChordInfo(name);
+
+            // Fallback to standard open shape if DB shape is missing or suspicious (e.g. 7+ chars)
+            const frets = standardInfo.frets !== "x00000"
+                ? standardInfo.frets
+                : (dbChord?.fretPositions || "x00000");
+
+            const isBarre = standardInfo.frets !== "x00000"
+                ? standardInfo.isBarreChord
+                : (dbChord?.isBarreChord ?? false);
+
+            chordMap.set(name, {
                 name,
-                fretPositions: info.frets,
-                isBarreChord: info.isBarreChord
-            };
+                fretPositions: frets,
+                isBarreChord: isBarre
+            });
         });
+
+        return Array.from(chordMap.values());
     }, [selectedVersion]);
     const chordFretMap = useMemo(() => {
         const map: Record<string, { fretPositions: string; isBarreChord?: boolean }> = {};
@@ -166,7 +220,26 @@ function SongDetailPage() {
             setLibraryBusy(false);
         }
     }
+    const [notationError] = useState<string | null>(null);
 
+    async function requestOtherNotation(targetNotationType: 0 | 1) {
+              if (!song || generatingNotation) return;
+               setGeneratingNotation(true);
+               try {
+                       const res = await fetch(`/api/songs/${song.id}/versions/generate`, {
+ method: "POST",
+                               headers: { "Content-Type": "application/json" },
+                               body: JSON.stringify({ notationType: targetNotationType })
+                       });
+                  if (res.ok) {
+                           const newVersion: SongVersion = await res.json();
+                           setSong((s) => (s ? { ...s, versions: [...(s.versions ?? []), newVersion] } : s));
+                           setSelectedVersion(newVersion);
+                       }
+               } finally {
+                       setGeneratingNotation(false);
+                   }
+       }
     if (loading) {
         return (
             <div className="song-detail-page">
@@ -252,6 +325,22 @@ function SongDetailPage() {
                 </div>
             )}
 
+            {selectedVersion && (
+                <div className="notation-switch fade-in-content" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", margin: "0.5rem 0" }}>
+                    {!song.versions?.some((v) => v.notationType === 1) && (
+                        <button type="button" onClick={() => requestOtherNotation(1)} disabled={generatingNotation}>
+                            {generatingNotation ? "Generating…" : "Generate Tab Version"}
+                        </button>
+                    )}
+                    {!song.versions?.some((v) => v.notationType === 0) && (
+                        <button type="button" onClick={() => requestOtherNotation(0)} disabled={generatingNotation}>
+                            {generatingNotation ? "Generating…" : "Generate Chords-Over-Lyrics Version"}
+                        </button>
+                    )}
+                    {notationError && <p className="empty-state" style={{ color: "#f87171" }}>{notationError}</p>}
+                </div>
+            )}
+
             {/* Inline Hover Chord Bar */}
             
 
@@ -270,7 +359,11 @@ function SongDetailPage() {
             </section>
 
             {selectedVersion && uniqueChords.length > 0 && (
-                <ChordReferencePanel chords={uniqueChords} strumPattern={selectedVersion.strumPattern} />
+                <ChordReferencePanel
+                    chords={uniqueChords}
+                    strumPattern={selectedVersion.strumPattern}
+                    bpm={song.bpm}
+                />
             )}
         </div>
     );

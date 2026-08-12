@@ -1,7 +1,37 @@
-import { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
+
+// ---- Types & Interfaces ---------------------------------------------
+export interface StringTarget {
+    note: string;
+    freq: number;
+}
+
+export type TuningKey =
+    | "Standard"
+    | "DropD"
+    | "HalfStepDown"
+    | "DropC"
+    | "OpenG"
+    | "DADGAD";
+
+export interface GaugeProps {
+    cents: number;
+    inTune: boolean;
+}
+
+export interface GuitarTunerProps {
+    initialTuning?: TuningKey;
+}
+
+interface LiveConfig {
+    tuningKey: TuningKey;
+    selectedIdx: number;
+    autoDetect: boolean;
+    calibration: number;
+}
 
 // ---- Tuning presets -------------------------------------------------
-const TUNINGS = {
+const TUNINGS: Record<TuningKey, StringTarget[]> = {
     Standard: [
         { note: "E2", freq: 82.41 },
         { note: "A2", freq: 110.0 },
@@ -52,7 +82,7 @@ const TUNINGS = {
     ],
 };
 
-const TUNING_LABELS = {
+const TUNING_LABELS: Record<TuningKey, string> = {
     Standard: "Standard (E A D G B E)",
     DropD: "Drop D (D A D G B E)",
     HalfStepDown: "Half step down",
@@ -62,7 +92,7 @@ const TUNING_LABELS = {
 };
 
 // ---- Optimized Pitch detection (autocorrelation) --------------------
-function detectPitch(buf, sampleRate) {
+function detectPitch(buf: Float32Array, sampleRate: number): number {
     const SIZE = buf.length;
     let rms = 0;
     for (let i = 0; i < SIZE; i++) rms += buf[i] * buf[i];
@@ -91,7 +121,7 @@ function detectPitch(buf, sampleRate) {
     const minLag = Math.floor(sampleRate / 1000);
     const maxLag = Math.min(n - 1, Math.ceil(sampleRate / 50));
 
-    const c = new Array(maxLag + 1).fill(0);
+    const c: number[] = new Array(maxLag + 1).fill(0);
     for (let lag = minLag; lag <= maxLag; lag++) {
         for (let i = 0; i < n - lag; i++) {
             c[lag] += trimmed[i] * trimmed[i + lag];
@@ -119,16 +149,16 @@ function detectPitch(buf, sampleRate) {
     const x3 = c[T0 + 1] ?? c[T0];
     const a = (x1 + x3 - 2 * x2) / 2;
     const b = (x3 - x1) / 2;
-    if (a) T0 = T0 - b / (2 * a);
+    if (a !== 0) T0 = T0 - b / (2 * a);
 
     return sampleRate / T0;
 }
 
-function freqToCents(freq, targetFreq) {
+function freqToCents(freq: number, targetFreq: number): number {
     return 1200 * Math.log2(freq / targetFreq);
 }
 
-function closestString(freq, strings) {
+function closestString(freq: number, strings: StringTarget[]): StringTarget {
     let best = strings[0];
     let bestDiff = Infinity;
     for (const s of strings) {
@@ -142,7 +172,7 @@ function closestString(freq, strings) {
 }
 
 // ---- Upgraded SVG Gauge Component -----------------------------------
-function Gauge({ cents, inTune }) {
+function Gauge({ cents, inTune }: GaugeProps) {
     const clamped = Math.max(-50, Math.min(50, cents ?? 0));
     const angle = (clamped / 50) * 80; // -80deg .. 80deg sweep
     const color = inTune ? "#22c55e" : Math.abs(clamped) < 15 ? "#eab308" : "#f97316";
@@ -155,12 +185,12 @@ function Gauge({ cents, inTune }) {
     const sx2 = 100 + 85 * Math.cos(sweetEndRad);
     const sy2 = 100 + 85 * Math.sin(sweetEndRad);
 
-    const ticks = [];
+    const ticks: React.ReactNode[] = [];
     for (let i = -50; i <= 50; i += 10) {
         const a = (i / 50) * 80;
         const rad = ((a - 90) * Math.PI) / 180;
-        const r1 = 78,
-            r2 = i === 0 ? 66 : i % 20 === 0 ? 70 : 74;
+        const r1 = 78;
+        const r2 = i === 0 ? 66 : i % 20 === 0 ? 70 : 74;
         const x1 = 100 + r1 * Math.cos(rad);
         const y1 = 100 + r1 * Math.sin(rad);
         const x2 = 100 + r2 * Math.cos(rad);
@@ -178,7 +208,7 @@ function Gauge({ cents, inTune }) {
         );
     }
 
-    const arcPoints = [];
+    const arcPoints: string[] = [];
     for (let i = -80; i <= 80; i += 4) {
         const rad = ((i - 90) * Math.PI) / 180;
         arcPoints.push(`${100 + 85 * Math.cos(rad)},${100 + 85 * Math.sin(rad)}`);
@@ -223,29 +253,35 @@ function Gauge({ cents, inTune }) {
 }
 
 // ---- Main Component ---------------------------------------------------
-export default function GuitarTuner({ initialTuning = "Standard" }) {
-    const [tuningKey, setTuningKey] = useState(
+export default function GuitarTuner({ initialTuning = "Standard" }: GuitarTunerProps) {
+    const [tuningKey, setTuningKey] = useState<TuningKey>(
         TUNINGS[initialTuning] ? initialTuning : "Standard"
     );
-    const [selectedIdx, setSelectedIdx] = useState(0);
-    const [autoDetect, setAutoDetect] = useState(true);
-    const [listening, setListening] = useState(false);
-    const [error, setError] = useState(null);
-    const [freq, setFreq] = useState(null);
-    const [note, setNote] = useState(null);
-    const [cents, setCents] = useState(0);
-    const [calibration, setCalibration] = useState(0);
+    const [selectedIdx, setSelectedIdx] = useState<number>(0);
+    const [autoDetect, setAutoDetect] = useState<boolean>(true);
+    const [listening, setListening] = useState<boolean>(false);
+    const [error, setError] = useState<string | null>(null);
+    const [freq, setFreq] = useState<number | null>(null);
+    const [note, setNote] = useState<string | null>(null);
+    const [cents, setCents] = useState<number>(0);
+    const [calibration, setCalibration] = useState<number>(0);
 
-    const audioCtxRef = useRef(null);
-    const analyserRef = useRef(null);
-    const rafRef = useRef(null);
-    const streamRef = useRef(null);
+    const audioCtxRef = useRef<AudioContext | null>(null);
+    const analyserRef = useRef<AnalyserNode | null>(null);
+    const rafRef = useRef<number | null>(null);
+    const streamRef = useRef<MediaStream | null>(null);
 
     // Exponential smoothing ref for jitter-free needle transitions
-    const smoothedCentsRef = useRef(0);
+    const smoothedCentsRef = useRef<number>(0);
 
     // Ref container holding current config values to prevent stale closures inside tick()
-    const liveConfigRef = useRef({ tuningKey, selectedIdx, autoDetect, calibration });
+    const liveConfigRef = useRef<LiveConfig>({
+        tuningKey,
+        selectedIdx,
+        autoDetect,
+        calibration,
+    });
+
     useEffect(() => {
         liveConfigRef.current = { tuningKey, selectedIdx, autoDetect, calibration };
     }, [tuningKey, selectedIdx, autoDetect, calibration]);
@@ -272,7 +308,12 @@ export default function GuitarTuner({ initialTuning = "Standard" }) {
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
-            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+            const AudioContextClass =
+                window.AudioContext ||
+                (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+
+            const ctx = new AudioContextClass();
             audioCtxRef.current = ctx;
             const source = ctx.createMediaStreamSource(stream);
             const analyser = ctx.createAnalyser();
@@ -320,7 +361,7 @@ export default function GuitarTuner({ initialTuning = "Standard" }) {
 
             tick();
             setListening(true);
-        } catch (e) {
+        } catch {
             setError("Microphone access denied or unavailable. Allow mic permission and try again.");
         }
     }, []);
@@ -385,16 +426,26 @@ export default function GuitarTuner({ initialTuning = "Standard" }) {
                 }}
             >
                 <div>
-                    <div style={{ color: "#a1a1aa", fontSize: 11, letterSpacing: 1, marginBottom: 2 }}>NOTE</div>
+                    <div style={{ color: "#a1a1aa", fontSize: 11, letterSpacing: 1, marginBottom: 2 }}>
+                        NOTE
+                    </div>
                     <div style={{ fontWeight: 600, fontSize: 15 }}>{note ?? "--"}</div>
                 </div>
                 <div>
-                    <div style={{ color: "#a1a1aa", fontSize: 11, letterSpacing: 1, marginBottom: 2 }}>FREQ</div>
-                    <div style={{ fontWeight: 600, fontSize: 15 }}>{freq ? `${freq.toFixed(1)} Hz` : "--"}</div>
+                    <div style={{ color: "#a1a1aa", fontSize: 11, letterSpacing: 1, marginBottom: 2 }}>
+                        FREQ
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: 15 }}>
+                        {freq ? `${freq.toFixed(1)} Hz` : "--"}
+                    </div>
                 </div>
                 <div>
-                    <div style={{ color: "#a1a1aa", fontSize: 11, letterSpacing: 1, marginBottom: 2 }}>OFFSET</div>
-                    <div style={{ fontWeight: 600, fontSize: 15 }}>{freq ? `${cents.toFixed(0)} ct` : "--"}</div>
+                    <div style={{ color: "#a1a1aa", fontSize: 11, letterSpacing: 1, marginBottom: 2 }}>
+                        OFFSET
+                    </div>
+                    <div style={{ fontWeight: 600, fontSize: 15 }}>
+                        {freq ? `${cents.toFixed(0)} ct` : "--"}
+                    </div>
                 </div>
             </div>
 
@@ -405,7 +456,7 @@ export default function GuitarTuner({ initialTuning = "Standard" }) {
             <select
                 value={tuningKey}
                 onChange={(e) => {
-                    setTuningKey(e.target.value);
+                    setTuningKey(e.target.value as TuningKey);
                     setSelectedIdx(0);
                 }}
                 style={{
@@ -420,7 +471,7 @@ export default function GuitarTuner({ initialTuning = "Standard" }) {
                     outline: "none",
                 }}
             >
-                {Object.keys(TUNINGS).map((k) => (
+                {(Object.keys(TUNINGS) as TuningKey[]).map((k) => (
                     <option key={k} value={k}>
                         {TUNING_LABELS[k]}
                     </option>
@@ -428,9 +479,25 @@ export default function GuitarTuner({ initialTuning = "Standard" }) {
             </select>
 
             {/* Interactive String Selector Buttons */}
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
+            <div
+                style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: 8,
+                }}
+            >
                 <label style={{ fontSize: 13, color: "#a1a1aa" }}>Select String</label>
-                <label style={{ fontSize: 12, color: "#a1a1aa", display: "flex", alignItems: "center", gap: 6, cursor: "pointer" }}>
+                <label
+                    style={{
+                        fontSize: 12,
+                        color: "#a1a1aa",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 6,
+                        cursor: "pointer",
+                    }}
+                >
                     <input
                         type="checkbox"
                         checked={autoDetect}
@@ -439,7 +506,14 @@ export default function GuitarTuner({ initialTuning = "Standard" }) {
                     Auto-detect
                 </label>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(6, 1fr)", gap: 6, marginBottom: 20 }}>
+            <div
+                style={{
+                    display: "grid",
+                    gridTemplateColumns: "repeat(6, 1fr)",
+                    gap: 6,
+                    marginBottom: 20,
+                }}
+            >
                 {strings.map((s, i) => {
                     const isSelected = selectedIdx === i;
                     return (

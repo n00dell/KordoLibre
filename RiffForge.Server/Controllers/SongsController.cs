@@ -5,6 +5,7 @@ using RiffForge.Server.Data;
 using RiffForge.Server.Models;
 using RiffForge.Server.Models.DTOs;
 using RiffForge.Server.Models.Enums;
+using RiffForge.Server.Services.Exceptions;
 using RiffForge.Server.Services.Interfaces;
 
 namespace RiffForge.Server.Controllers
@@ -14,11 +15,13 @@ namespace RiffForge.Server.Controllers
     public class SongsController : ControllerBase
     {
         private readonly RiffForgeDbContext _db;
-        private readonly IGeminiChordService _geminiChords;
-        public SongsController(RiffForgeDbContext db, IGeminiChordService geminiChords)
+        private readonly IChordProviderFactory _chordFactory;
+        private readonly ILogger<SongsController> _logger;
+        public SongsController(RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongsController> logger)
         {
             _db = db;
-            _geminiChords = geminiChords;
+            _chordFactory = chordFactory;
+            _logger = logger;
         }
 
         // GET /api/songs/19
@@ -44,22 +47,41 @@ namespace RiffForge.Server.Controllers
 
             if (lacksChords || isStale)
             {
-                await RefreshSongChordsAsync(song, ct);
+                try
+                {
+                    await RefreshSongChordsAsync(song, ct);
+                }
+                catch (AllProvidersFailedException ex)
+                {
+                    _logger.LogWarning(ex, "Chord refresh failed for song {SongId}; serving existing (possibly stale) data instead.", song.Id);
+                    // Fall through and return what we have — stale/missing chords beat a 500.
+                }
             }
-
             return Ok(song);
         }
 
         private async Task RefreshSongChordsAsync(Song song, CancellationToken ct)
         {
-            var generated = await _geminiChords.GenerateChordsAsync(
-                song.PrimaryArtist.Name,
-                song.Name,
-                song.Lyrics,
-                Difficulty.Intermediate,
-                ct);
+            GeminiChordResponse? generated = null;
 
-            if (generated == null) return;
+            //var generated = await _geminiChords.GenerateChordsAsync(
+            //    song.PrimaryArtist.Name,
+            //    song.Name,
+            //    song.Lyrics,
+            //    Difficulty.Intermediate,
+            //    ct);
+            try
+            {
+                 generated = await _chordFactory.GenerateChordsAsync(
+        song.PrimaryArtist.Name, song.Name, song.Lyrics, Difficulty.Intermediate,
+        preferredProviderKey: null, apiKeyOverride: null, ct);
+            }
+            catch (HttpRequestException)
+            {
+                generated = null;
+            }
+
+            //if (generated == null) return;
 
             // Clear old AI-generated default versions if updating
             var existingVersions = song.Versions.ToList();

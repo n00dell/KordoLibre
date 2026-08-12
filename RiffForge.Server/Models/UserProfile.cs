@@ -25,5 +25,7 @@ namespace RiffForge.Server.Models
         public ICollection<Technique> MasteredTechniques { get; set; } = new List<Technique>();
 
         public ICollection<Song> LibrarySongs { get; set; } = new List<Song>();
+
+        public AiProviderPreference PreferredProvider { get; set; } = AiProviderPreference.Auto;
     }
 }

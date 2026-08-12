@@ -9,6 +9,9 @@
 
 import type { Difficulty, Tuning, CapoPos, StrumPattern, InstrumentType, ChordQuality, TechniqueCategory } from "./enums";
 
+export type AiProviderPreference = "Auto" | "Gemini" | "Claude";
+
+
 export interface Artist {
     id: number;
     name: string;
@@ -103,7 +106,7 @@ export interface UserSongProgress {
 }
 
 // Mirrors UserProfile.cs
-export interface UserProfile {
+export interface PracticeProfile {
     id: number;
     userId: string;
     skillLevel: Difficulty;
@@ -111,3 +114,4 @@ export interface UserProfile {
     favoriteGenres: Genre[];
     masteredTechniques: Technique[];
 }
+

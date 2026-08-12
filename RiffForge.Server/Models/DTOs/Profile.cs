@@ -7,6 +7,9 @@
         public int DailyPracticeGoalMinutes { get; set; }
         public List<int> FavoriteGenreIds { get; set; } = new();
         public List<int> MasteredTechniqueIds { get; set; } = new();
+
+        public string PreferredProvider { get; set; } = "Auto";
+        public List<string> ConfiguredProviders { get; set; } = new();
     }
 
     public class UpdateProfileRequest
@@ -15,6 +18,7 @@
         public int DailyPracticeGoalMinutes { get; set; }
         public List<int> FavoriteGenreIds { get; set; } = new();
         public List<int> MasteredTechniqueIds { get; set; } = new();
+        public string PreferredProvider { get; set; } = "Auto";
     }
 
     public record ProfileOptionItem(int Id, string Name);

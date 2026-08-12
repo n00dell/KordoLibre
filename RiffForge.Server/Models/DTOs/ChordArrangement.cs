@@ -32,6 +32,8 @@ namespace RiffForge.Server.Models.DTOs
 
     public class GeminiChordResponse
     {
+        [JsonPropertyName("estimatedBpm")]
+        public int EstimatedBpm { get; set; }
         [JsonPropertyName("originalVersion")]
         public ChordArrangement OriginalVersion { get; set; } = null!;
         [JsonPropertyName("alternateVersion")]

@@ -95,6 +95,7 @@ function ProfilePage() {
                 dailyPracticeGoalMinutes: profile.dailyPracticeGoalMinutes,
                 favoriteGenreIds: profile.favoriteGenreIds ?? [],
                 masteredTechniqueIds: profile.masteredTechniqueIds ?? [],
+                preferredProvider: profile.preferredProvider,
             });
             setProfile(updated);
             setSaved(true);
