@@ -549,3 +549,129 @@
         animation: none;
     }
 }
+/* Fixes native <select> dropdown popups rendering white-on-white until hover */
+.profile-field select option,
+.ai-provider-preference select option {
+    background: var(--theme-surface, #17100a);
+    color: var(--theme-text-dim, #b7a68d);
+    padding: 8px;
+}
+
+    .profile-field select option:checked,
+    .profile-field select option:hover,
+    .ai-provider-preference select option:checked,
+    .ai-provider-preference select option:hover {
+        background: var(--theme-surface-3, #251b10);
+        color: var(--theme-gold, #e2a53d);
+    }
+
+/* ================= AI PROVIDER SETTINGS ================= */
+.ai-provider-preference {
+    margin-bottom: 20px;
+}
+
+    .ai-provider-preference label {
+        display: block;
+        font-size: 13px;
+        color: var(--theme-text-dim, #b7a68d);
+        margin-bottom: 8px;
+    }
+
+    .ai-provider-preference select {
+        width: 100%;
+        max-width: 360px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--theme-border, #3a2c1a);
+        background: var(--theme-surface-2, #1f160d);
+        color: var(--theme-text-primary, #f1ead9);
+        font-size: 14px;
+    }
+
+    .ai-provider-preference .field-hint {
+        font-size: 12px;
+        color: var(--theme-text-faint, #7c6c56);
+        margin-top: 8px;
+        max-width: 480px;
+        line-height: 1.5;
+    }
+
+.ai-provider-key-row {
+    padding: 16px 0;
+    border-top: 1px dashed var(--theme-border-soft, #2a2014);
+}
+
+    .ai-provider-key-row:first-of-type {
+        border-top: 1px solid var(--theme-border, #3a2c1a);
+        margin-top: 6px;
+    }
+
+.ai-provider-key-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-family: var(--theme-display, "Playfair Display", Georgia, serif);
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.ai-provider-key-badge {
+    font-size: 10.5px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    background: var(--theme-surface-3, #251b10);
+    border: 1px solid var(--theme-gold-deep, #b9812a);
+    color: var(--theme-gold, #e2a53d);
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-family: var(--theme-mono, "IBM Plex Mono", monospace);
+    font-weight: 600;
+}
+
+.ai-provider-key-input-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    align-items: center;
+}
+
+    .ai-provider-key-input-row input[type="password"] {
+        flex: 1;
+        min-width: 200px;
+        padding: 9px 12px;
+        border-radius: 8px;
+        border: 1px solid var(--theme-border, #3a2c1a);
+        background: var(--theme-surface-2, #1f160d);
+        color: var(--theme-text-primary, #f1ead9);
+        font-size: 13px;
+    }
+
+    .ai-provider-key-input-row button {
+        padding: 9px 16px;
+        border-radius: 8px;
+        border: 1px solid var(--theme-border, #3a2c1a);
+        background: transparent;
+        color: var(--theme-text-dim, #b7a68d);
+        font-size: 13px;
+        cursor: pointer;
+        transition: 0.15s;
+        white-space: nowrap;
+    }
+
+        .ai-provider-key-input-row button:hover:not(:disabled) {
+            border-color: var(--theme-gold, #e2a53d);
+            color: var(--theme-gold, #e2a53d);
+        }
+
+        .ai-provider-key-input-row button:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+
+.ai-provider-test-result {
+    margin-top: 8px;
+    font-size: 12.5px;
+    font-family: var(--theme-mono, "IBM Plex Mono", monospace);
+    color: var(--theme-text-dim, #b7a68d);
+}

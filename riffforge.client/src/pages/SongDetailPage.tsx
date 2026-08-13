@@ -5,7 +5,7 @@ import type { Song, SongVersion } from "../types/models";
 import { sampleSongs } from "../data/sampleData";
 import { useTheme } from "../context/ThemeContext";
 import ChordReferencePanel from "../components/ChordReferencePanel";
-import type { ChordItem } from "../components/ChordHoverBar";
+import type { ChordItem } from "../types/models";
 import ChordLyricLine from "../components/ChordLyricLine";
 import TurntablePlayer from "../components/TurntablePlayer";
 import TapeDeckPlayer from "../components/TapeDeckPlayer";
@@ -220,7 +220,7 @@ function SongDetailPage() {
             setLibraryBusy(false);
         }
     }
-    const [notationError] = useState<string | null>(null);
+    const [notationError, setNotationError] = useState<string | null>(null);
 
     async function requestOtherNotation(targetNotationType: 0 | 1) {
               if (!song || generatingNotation) return;
@@ -235,8 +235,13 @@ function SongDetailPage() {
                            const newVersion: SongVersion = await res.json();
                            setSong((s) => (s ? { ...s, versions: [...(s.versions ?? []), newVersion] } : s));
                            setSelectedVersion(newVersion);
-                       }
-               } finally {
+                  } else {
+                      setNotationError("Couldn't generate that version right now.");
+                  }
+               } catch {
+                   setNotationError("Couldn't generate that version right now.");
+               }
+            finally {
                        setGeneratingNotation(false);
                    }
        }
@@ -328,12 +333,12 @@ function SongDetailPage() {
             {selectedVersion && (
                 <div className="notation-switch fade-in-content" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", margin: "0.5rem 0" }}>
                     {!song.versions?.some((v) => v.notationType === 1) && (
-                        <button type="button" onClick={() => requestOtherNotation(1)} disabled={generatingNotation}>
+                        <button type="button" className="notation-gen-btn" onClick={() => requestOtherNotation(1)} disabled={generatingNotation}>
                             {generatingNotation ? "Generating…" : "Generate Tab Version"}
                         </button>
                     )}
                     {!song.versions?.some((v) => v.notationType === 0) && (
-                        <button type="button" onClick={() => requestOtherNotation(0)} disabled={generatingNotation}>
+                        <button type="button" className="notation-gen-btn" onClick={() => requestOtherNotation(0)} disabled={generatingNotation}>
                             {generatingNotation ? "Generating…" : "Generate Chords-Over-Lyrics Version"}
                         </button>
                     )}

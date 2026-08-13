@@ -1,10 +1,9 @@
 //profile.ts
-
+import type { AiProviderPreference } from "./models";
 export interface ProfileOptionItem {
     id: number;
     name: string;
 }
-export type AiProviderPreference = "Auto" | "Gemini" | "Claude";
 
 export interface ProfileOptions {
     genres: ProfileOptionItem[];

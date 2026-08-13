@@ -16,7 +16,7 @@ namespace RiffForge.Server.Services
         private readonly string _apiKey;
         private readonly string _model;
         private const string AnthropicVersion = "2023-06-01";
-        private const string Endpoint = "https://api.anthropic.com/v1/messages";
+        private const string Endpoint = "https://openrouter.ai/api";
 
         public string ProviderKey => "claude";
 
@@ -24,7 +24,7 @@ namespace RiffForge.Server.Services
         {
             _httpClient = httpClient;
             _apiKey = config["Claude:ApiKey"] ?? string.Empty; // may be empty if only used as a fallback with per-user keys later
-            _model = config["Claude:Model"] ?? "claude-sonnet-5";
+            _model = config["Claude:Model"] ?? "claude - haiku - 4.5";
         }
 
         public async Task<GeminiChordResponse?> GenerateChordsAsync(

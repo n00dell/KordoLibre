@@ -47,7 +47,8 @@ namespace RiffForge.Server.Controllers
 
             if (!Enum.TryParse<Difficulty>(req.SkillLevel, ignoreCase: true, out var skillLevel))
                 return BadRequest($"Invalid skill level: {req.SkillLevel}");
-
+            if (!Enum.TryParse<AiProviderPreference>(req.PreferredProvider, ignoreCase: true, out var preferredProvider))
+                return BadRequest($"Invalid provider preference: {req.PreferredProvider}");
             var profile = await _db.UserProfiles
                 .Include(p => p.FavoriteGenres)
                 .Include(p => p.MasteredTechniques)
@@ -61,6 +62,7 @@ namespace RiffForge.Server.Controllers
 
             profile.SkillLevel = skillLevel;
             profile.DailyPracticeGoalMinutes = req.DailyPracticeGoalMinutes;
+            profile.PreferredProvider = preferredProvider;
 
             var genres = await _db.Genres.Where(g => req.FavoriteGenreIds.Contains(g.Id)).ToListAsync(ct);
             profile.FavoriteGenres.Clear();
@@ -116,7 +118,8 @@ namespace RiffForge.Server.Controllers
             SkillLevel = profile.SkillLevel.ToString(),
             DailyPracticeGoalMinutes = profile.DailyPracticeGoalMinutes,
             FavoriteGenreIds = profile.FavoriteGenres.Select(g => g.Id).ToList(),
-            MasteredTechniqueIds = profile.MasteredTechniques.Select(t => t.Id).ToList()
+            MasteredTechniqueIds = profile.MasteredTechniques.Select(t => t.Id).ToList(),
+            PreferredProvider = profile.PreferredProvider.ToString()
         };
 
         private string? GetUserId() =>

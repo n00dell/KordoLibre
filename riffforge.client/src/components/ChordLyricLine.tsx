@@ -1,6 +1,7 @@
 // src/components/ChordLyricLine.tsx
 import { useState } from "react";
 import ChordDiagram from "./ChordDiagram";
+import { parseChordLine } from "../utils/chordLyrics";
 
 export interface ChordFretInfo {
     fretPositions: string;
@@ -12,29 +13,7 @@ interface Props {
     chordFrets: Record<string, ChordFretInfo>;
 }
 
-interface Segment {
-    chord: string | null;
-    text: string;
-}
 
-function parseLine(rawLine: string): Segment[] {
-    const regex = /\[([^\]]+)\]/g;
-    const segments: Segment[] = [];
-    let lastIndex = 0;
-    let pendingChord: string | null = null;
-    let match: RegExpExecArray | null;
-
-    while ((match = regex.exec(rawLine)) !== null) {
-        const textBefore = rawLine.slice(lastIndex, match.index);
-        if (textBefore || pendingChord) {
-            segments.push({ chord: pendingChord, text: textBefore });
-        }
-        pendingChord = match[1];
-        lastIndex = regex.lastIndex;
-    }
-    segments.push({ chord: pendingChord, text: rawLine.slice(lastIndex) });
-    return segments.length ? segments : [{ chord: null, text: rawLine }];
-}
 
 export default function ChordLyricLine({ line, chordFrets }: Props) {
     const [hovered, setHovered] = useState<string | null>(null);
@@ -43,7 +22,7 @@ export default function ChordLyricLine({ line, chordFrets }: Props) {
         return <div style={{ height: "1.4em" }} />;
     }
 
-    const segments = parseLine(line);
+    const segments = parseChordLine(line);
 
     return (
         <div style={{ position: "relative", lineHeight: "2.3em", marginBottom: "0.2em" }}>

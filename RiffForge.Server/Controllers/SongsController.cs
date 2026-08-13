@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Data;
@@ -11,17 +12,20 @@ using RiffForge.Server.Services.Interfaces;
 namespace RiffForge.Server.Controllers
 {
     [Route("api/songs")]
+    [Authorize]
     [ApiController]
     public class SongsController : ControllerBase
     {
         private readonly RiffForgeDbContext _db;
         private readonly IChordProviderFactory _chordFactory;
+        private readonly IChordResolverService _chordResolver;
         private readonly ILogger<SongsController> _logger;
-        public SongsController(RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongsController> logger)
+        public SongsController(RiffForgeDbContext db, IChordProviderFactory chordFactory, IChordResolverService chordResolver, ILogger<SongsController> logger)
         {
             _db = db;
             _chordFactory = chordFactory;
             _logger = logger;
+            _chordResolver = chordResolver;
         }
 
         // GET /api/songs/19
@@ -64,12 +68,7 @@ namespace RiffForge.Server.Controllers
         {
             GeminiChordResponse? generated = null;
 
-            //var generated = await _geminiChords.GenerateChordsAsync(
-            //    song.PrimaryArtist.Name,
-            //    song.Name,
-            //    song.Lyrics,
-            //    Difficulty.Intermediate,
-            //    ct);
+            
             try
             {
                  generated = await _chordFactory.GenerateChordsAsync(
@@ -81,7 +80,6 @@ namespace RiffForge.Server.Controllers
                 generated = null;
             }
 
-            //if (generated == null) return;
 
             // Clear old AI-generated default versions if updating
             var existingVersions = song.Versions.ToList();
@@ -115,9 +113,9 @@ namespace RiffForge.Server.Controllers
                 DateScraped = DateTime.UtcNow
             };
 
-            originalVer.Chords = await ResolveChordsAsync(
+            originalVer.Chords = await _chordResolver.ResolveChordsAsync(
     generated.OriginalVersion.ChordDefinitions, originalVer.Tuning, originalVer.Difficulty, ct);
-            altVer.Chords = await ResolveChordsAsync(
+            altVer.Chords = await _chordResolver.ResolveChordsAsync(
                 generated.AlternateVersion.ChordDefinitions, altVer.Tuning, altVer.Difficulty, ct);
             _db.SongVersions.Add(originalVer);
             _db.SongVersions.Add(altVer);
@@ -125,41 +123,8 @@ namespace RiffForge.Server.Controllers
             song.LastUpdated = DateTime.UtcNow;
             await _db.SaveChangesAsync(ct);
         }
-        private static string Normalize(string input) =>
-string.IsNullOrWhiteSpace(input) ? string.Empty : input.Trim().ToLowerInvariant();
+        
 
-        private async Task<List<Chord>> ResolveChordsAsync(
-            List<ChordDefinition> defs, Tuning tuning, Difficulty difficulty, CancellationToken ct)
-        {
-            var chords = new List<Chord>();
-            foreach (var def in defs)
-            {
-                var normName = Normalize(def.Name);
-                var chord = await _db.Chords.FirstOrDefaultAsync(c => c.NormalizedName == normName, ct);
-
-                if (chord == null)
-                {
-                    chord = new Chord
-                    {
-                        Name = def.Name,
-                        NormalizedName = normName,
-                        FretPositions = def.Frets,
-                        IsBarreChord = def.IsBarre,
-                        Tuning = tuning,
-                        Difficulty = difficulty,
-                        SourceName = "Gemini AI"
-                    };
-                    _db.Chords.Add(chord);
-                    await _db.SaveChangesAsync(ct); // avoid duplicate inserts within the same request
-                }
-                else if (string.IsNullOrWhiteSpace(chord.FretPositions))
-                {
-                    chord.FretPositions = def.Frets; // backfill if we'd only seen the name before
-                }
-
-                chords.Add(chord);
-            }
-            return chords;
-        }
+        
     }
 }

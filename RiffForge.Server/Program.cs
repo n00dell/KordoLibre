@@ -27,6 +27,8 @@ builder.Services.AddScoped<IChordGenerationProvider, ClaudeChordProvider>();
 builder.Services.AddScoped<ChordArrangementValidator>();
 builder.Services.AddScoped<IChordProviderFactory, ChordProviderFactory>();
 builder.Services.AddScoped<IApiKeyProtector, ApiKeyProtector>();
+builder.Services.AddScoped<IChordResolverService, ChordResolverService>();
+builder.Services.AddScoped<AiProviderResolver>();
 builder.Services.AddHttpClient<GeminiChordService>()
     .SetHandlerLifetime(TimeSpan.FromMinutes(5));
 builder.Services.AddHttpClient<ClaudeChordProvider>()
@@ -82,7 +84,7 @@ builder.Services.AddControllers()
     });
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();
-
+builder.Services.AddEndpointsApiExplorer();
 
 var app = builder.Build();
 
@@ -94,8 +96,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-builder.Services.AddEndpointsApiExplorer();
-// Configure the HTTP request pipeline.
+
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();

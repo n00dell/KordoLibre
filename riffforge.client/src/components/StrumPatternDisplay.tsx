@@ -1,22 +1,11 @@
 // src/components/StrumPatternDisplay.tsx
-
+import { getArrowSequence } from "../utils/strumArrows";
 
 interface Props {
     pattern: string | number;
 }
 
 export default function StrumPatternDisplay({ pattern }: Props) {
-    const getArrowSequence = (p: string | number) => {
-        const str = String(p).toLowerCase();
-        if (str.includes("downdownup") || str.includes("0")) {
-            return ["↓", " ", "↓", "↑", " ", "↑", "↓", "↑"];
-        }
-        if (str.includes("down")) {
-            return ["↓", " ", "↓", " ", "↓", " ", "↓", " "];
-        }
-        return ["↓", " ", "↓", "↑", " ", "↑", "↓", "↑"];
-    };
-
     const arrows = getArrowSequence(pattern);
     const beats = ["1", "&", "2", "&", "3", "&", "4", "&"];
 

@@ -1,10 +1,12 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Data;
 using RiffForge.Server.Models;
 using RiffForge.Server.Services.Exceptions;
 using RiffForge.Server.Services.Interfaces;
+using System.Security.Claims;
 
 namespace RiffForge.Server.Controllers
 {
@@ -12,6 +14,7 @@ namespace RiffForge.Server.Controllers
     public record ProviderKeyStatus(string ProviderKey, bool Configured, DateTime? LastVerified);
 
     [Route("api/profile/ai-keys")]
+    [Authorize]
     [ApiController]
     public class AiKeysController : ControllerBase
     {
@@ -124,7 +127,7 @@ namespace RiffForge.Server.Controllers
             }
         }
 
-        private string GetUserId() =>
-            User.FindFirst("sub")?.Value ?? User.Identity?.Name ?? throw new UnauthorizedAccessException();
+        private string? GetUserId() =>
+            User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.Identity?.Name;
     }
 }

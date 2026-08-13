@@ -1,6 +1,7 @@
 // src/components/StrumPatternCard.tsx
 import { useState, useRef, useEffect, useCallback } from "react";
 import StrumPatternDisplay from "./StrumPatternDisplay";
+import { getArrowSequence } from "../utils/strumArrows";
 
 interface Props {
     pattern: string | number;
@@ -12,22 +13,9 @@ export default function StrumPatternCard({ pattern, bpm = 120 }: Props) {
     const audioCtxRef = useRef<AudioContext | null>(null);
     const timerRef = useRef<number | null>(null);
 
-    // Parse pattern arrows to play audio
-    const getArrows = (p: string | number) => {
-        const str = String(p).toLowerCase();
-        if (str.includes("downdownup") || str.includes("0")) {
-            return ["↓", " ", "↓", "↑", " ", "↑", "↓", "↑"];
-        }
-        if (str.includes("down")) {
-            return ["↓", " ", "↓", " ", "↓", " ", "↓", " "];
-        }
-        return ["↓", " ", "↓", "↑", " ", "↑", "↓", "↑"];
-    };
-
-    const arrows = getArrows(pattern);
+    const arrows = getArrowSequence(pattern);
 
     const STRING_FREQS = [82.41, 110.0, 146.83, 196.0, 246.94, 329.63];
-
 
     const playStrumSound = useCallback((isDown: boolean) => {
         if (!audioCtxRef.current) {

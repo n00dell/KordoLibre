@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Data;
@@ -11,18 +12,21 @@ using RiffForge.Server.Services.Interfaces;
 namespace RiffForge.Server.Controllers
 {
     [Route("api/songs/{songId}/versions")]
+    [Authorize]
     [ApiController]
     public class SongVersionsController : ControllerBase
     {
         private readonly RiffForgeDbContext _db;
         private readonly IChordProviderFactory _chordFactory;
+        private readonly IChordResolverService _chordResolver;
         private readonly ILogger<SongVersionsController> _logger;
 
-        public SongVersionsController(RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongVersionsController> logger)
+        public SongVersionsController(RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongVersionsController> logger, IChordResolverService chordResolver)
         {
             _db = db;
             _chordFactory = chordFactory;
             _logger = logger;
+            _chordResolver = chordResolver;
         }
 
         public record GenerateVersionRequest(NotationType NotationType, Difficulty? Difficulty = null);
@@ -80,7 +84,7 @@ namespace RiffForge.Server.Controllers
                     ? "Gemini AI (Tab, on-demand)"
                     : "Gemini AI (Chords, on-demand)",
                 DateScraped = DateTime.UtcNow,
-                Chords = await ResolveChordsAsync(arrangement.ChordDefinitions, arrangement.Tuning, arrangement.Difficulty, ct)
+                Chords = await _chordResolver.ResolveChordsAsync(arrangement.ChordDefinitions, arrangement.Tuning, arrangement.Difficulty, ct)
             };
 
             _db.SongVersions.Add(version);
@@ -89,38 +93,6 @@ namespace RiffForge.Server.Controllers
             return Ok(version);
         }
 
-        private async Task<List<Chord>> ResolveChordsAsync(
-            List<Models.DTOs.ChordDefinition> defs, Tuning tuning, Difficulty difficulty, CancellationToken ct)
-        {
-            var chords = new List<Chord>();
-            foreach (var def in defs)
-            {
-                var normName = def.Name.Trim().ToLowerInvariant();
-                var chord = await _db.Chords.FirstOrDefaultAsync(c => c.NormalizedName == normName, ct);
-
-                if (chord == null)
-                {
-                    chord = new Chord
-                    {
-                        Name = def.Name,
-                        NormalizedName = normName,
-                        FretPositions = def.Frets,
-                        IsBarreChord = def.IsBarre,
-                        Tuning = tuning,
-                        Difficulty = difficulty,
-                        SourceName = "Gemini AI"
-                    };
-                    _db.Chords.Add(chord);
-                    await _db.SaveChangesAsync(ct);
-                }
-                else if (string.IsNullOrWhiteSpace(chord.FretPositions))
-                {
-                    chord.FretPositions = def.Frets;
-                }
-
-                chords.Add(chord);
-            }
-            return chords;
-        }
+        
     }
 }

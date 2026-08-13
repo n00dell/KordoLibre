@@ -1623,3 +1623,24 @@ a {
     color: inherit;
     cursor: pointer;
 }
+.notation-gen-btn {
+    padding: 8px 16px;
+    border-radius: 999px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+}
+
+    .notation-gen-btn:hover:not(:disabled) {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
+
+    .notation-gen-btn:disabled {
+        opacity: 0.5;
+        cursor: default;
+    }

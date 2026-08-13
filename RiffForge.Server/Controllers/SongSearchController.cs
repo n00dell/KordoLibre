@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Data;
@@ -13,6 +14,7 @@ using RiffForge.Server.Services.Interfaces;
 namespace RiffForge.Server.Controllers
 {
     [Route("api/songsearch")]
+    [Authorize]
     [ApiController]
     public class SongSearchController : ControllerBase
     {
@@ -20,15 +22,17 @@ namespace RiffForge.Server.Controllers
         private readonly ILyricsService _lyrics;
         private readonly RiffForgeDbContext _db;
         private readonly IChordProviderFactory _chordFactory;
+        private readonly IChordResolverService _chordResolver;
         private readonly ILogger<SongSearchController> _logger;
         private readonly AiProviderResolver _aiProviderResolver;
 
-        public SongSearchController(ILastFmService lastFm, ILyricsService lyrics,RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongSearchController> logger, AiProviderResolver aiProviderResolver)
+        public SongSearchController(ILastFmService lastFm, ILyricsService lyrics,RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongSearchController> logger, AiProviderResolver aiProviderResolver, IChordResolverService chordResolver)
         {
             _lastFm = lastFm;
             _db = db;
             _lyrics = lyrics;
             _chordFactory = chordFactory;
+            _chordResolver = chordResolver;
             _aiProviderResolver = aiProviderResolver;
             _logger = logger;
         }
@@ -40,7 +44,7 @@ namespace RiffForge.Server.Controllers
             if (string.IsNullOrWhiteSpace(query) || query.Length < 2)
                 return Ok(new SongSearchResponse());
 
-            var normQuery = Normalize(query);
+            var normQuery = _chordResolver.Normalize(query);
             const double searchThreshold = 0.3;
 
             // Typo-tolerant title/artist matches
@@ -61,12 +65,13 @@ namespace RiffForge.Server.Controllers
                         : EF.Functions.TrigramsSimilarity(s.PrimaryArtist.NormalizedName, normQuery)
                 })
                 .ToListAsync(ct);
+            var escaped = query.Replace("%", "\\%").Replace("_", "\\_");
 
             // Lyric substring matches — a lyric hit is a strong, unambiguous signal,
             // so it's ranked above fuzzy title matches when both exist.
             var lyricMatches = await _db.Songs
                 .Include(s => s.PrimaryArtist)
-                .Where(s => s.Lyrics != null && EF.Functions.ILike(s.Lyrics, $"%{query}%"))
+                .Where(s => s.Lyrics != null && EF.Functions.ILike(s.Lyrics, $"%{escaped}%"))
                 .Select(s => new
                 {
                     s.Id,
@@ -106,8 +111,8 @@ namespace RiffForge.Server.Controllers
         {
             var cleanArtist = CleanInput(req.Artist);
             var cleanTrack = CleanInput(req.Track);
-            var normArtist = Normalize(cleanArtist);
-            var normTrack = Normalize(cleanTrack);
+            var normArtist = _chordResolver.Normalize(cleanArtist);
+            var normTrack = _chordResolver.Normalize(cleanTrack);
 
             // ==========================================
             // 1. CHECK DB FIRST (Prevents Duplicates)
@@ -153,8 +158,8 @@ namespace RiffForge.Server.Controllers
 
             var finalArtistName = CleanInput(detail.Artist);
             var finalTrackName = CleanInput(detail.Name);
-            var finalNormArtist = Normalize(finalArtistName);
-            var finalNormTrack = Normalize(finalTrackName);
+            var finalNormArtist = _chordResolver.Normalize(finalArtistName);
+            var finalNormTrack = _chordResolver.Normalize(finalTrackName);
 
             // Re-check DB in case Last.fm corrected spelling/casing
             existingSong = await _db.Songs
@@ -271,9 +276,9 @@ namespace RiffForge.Server.Controllers
                     SourceName = "Gemini AI (Simplified Alt)",
                     DateScraped = DateTime.UtcNow
                 };
-                originalVer.Chords = await ResolveChordsAsync(
+                originalVer.Chords = await _chordResolver.ResolveChordsAsync(
     generatedChords.OriginalVersion.ChordDefinitions, originalVer.Tuning, originalVer.Difficulty, ct);
-                altVer.Chords = await ResolveChordsAsync(
+                altVer.Chords = await _chordResolver.ResolveChordsAsync(
                     generatedChords.AlternateVersion.ChordDefinitions, altVer.Tuning, altVer.Difficulty, ct);
                 originalVer.NotationType = generatedChords.OriginalVersion.NotationType;
                 altVer.NotationType = generatedChords.AlternateVersion.NotationType;
@@ -334,41 +339,8 @@ namespace RiffForge.Server.Controllers
             return req is null ? NotFound() : Ok(req);
         }
 
-        private static string Normalize(string input) =>
-    string.IsNullOrWhiteSpace(input) ? string.Empty : input.Trim().ToLowerInvariant();
+        
 
-        private async Task<List<Chord>> ResolveChordsAsync(
-            List<ChordDefinition> defs, Tuning tuning, Difficulty difficulty, CancellationToken ct)
-        {
-            var chords = new List<Chord>();
-            foreach (var def in defs)
-            {
-                var normName = Normalize(def.Name);
-                var chord = await _db.Chords.FirstOrDefaultAsync(c => c.NormalizedName == normName, ct);
-
-                if (chord == null)
-                {
-                    chord = new Chord
-                    {
-                        Name = def.Name,
-                        NormalizedName = normName,
-                        FretPositions = def.Frets,
-                        IsBarreChord = def.IsBarre,
-                        Tuning = tuning,
-                        Difficulty = difficulty,
-                        SourceName = "Gemini AI"
-                    };
-                    _db.Chords.Add(chord);
-                    await _db.SaveChangesAsync(ct); // avoid duplicate inserts within the same request
-                }
-                else if (string.IsNullOrWhiteSpace(chord.FretPositions))
-                {
-                    chord.FretPositions = def.Frets; // backfill if we'd only seen the name before
-                }
-
-                chords.Add(chord);
-            }
-            return chords;
-        }
+        
     }
 }

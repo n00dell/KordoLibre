@@ -115,3 +115,8 @@ export interface PracticeProfile {
     masteredTechniques: Technique[];
 }
 
+export interface ChordItem {
+    name: string;
+    fretPositions: string;
+    isBarreChord?: boolean;
+}

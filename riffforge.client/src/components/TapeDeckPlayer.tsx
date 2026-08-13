@@ -17,8 +17,7 @@ function TapeDeckPlayer({ song }: TapeDeckPlayerProps) {
         return () => clearTimeout(timer);
     }, []);
 
-    // TapeDeckPlayer.tsx — replace the JSX return with this
-    // TapeDeckPlayer.tsx — updated return
+   
     return (
         <div className="tape-deck-view" style={{ "--shell-color": shellColor } as React.CSSProperties}>
             <div className="album-backdrop">

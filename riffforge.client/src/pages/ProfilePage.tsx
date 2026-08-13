@@ -3,6 +3,7 @@ import { useAuth } from "../hooks/useAuth";
 import { fetchProfile, fetchProfileOptions, updateProfile } from "../api/profile";
 import { SKILL_LEVELS } from "../types/profile";
 import type { Profile, ProfileOptions } from "../types/profile";
+import AiProviderSettings from "../components/AiProviderSettings";   // add this
 import "../styles/ProfilePage.css";
 
 // ---- Stand-in data for the "Sound Sources" / "Your Shelf" sections ----
@@ -229,7 +230,23 @@ function ProfilePage() {
                     </div>
                 </div>
             </section>
-
+            {/* ================= AI PROVIDER ================= */}
+            <section className="rf-block">
+                <div className="rf-block-head">
+                    <h2>AI Chord Generation</h2>
+                    <p className="rf-block-sub">
+                        Choose which AI provider generates chords/tabs, and add your own API key to use instead of the shared server key.
+                    </p>
+                </div>
+                <div className="rf-panel">
+                    <AiProviderSettings
+                        preferredProvider={profile.preferredProvider}
+                        onPreferredProviderChange={(pref) =>
+                            setProfile({ ...profile, preferredProvider: pref })
+                        }
+                    />
+                </div>
+            </section>
             {/* ================= SOUND SOURCES (UI only, not wired up) ================= */}
             <section className="rf-block">
                 <div className="rf-block-head">
