@@ -1734,3 +1734,356 @@ a {
         border-color: var(--accent);
         color: var(--accent);
     }
+/* ================= PAGE SHELL ================= */
+.profile-page-tabbed {
+    max-width: 640px;
+    margin: 0 auto;
+    padding-bottom: 60px;
+}
+
+.rf-eyebrow {
+    font-family: var(--theme-mono, "IBM Plex Mono", monospace);
+    font-size: 11px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--theme-gold, #e2a53d);
+    margin: 0 0 8px;
+    opacity: 0.85;
+}
+
+.profile-page-tabbed > h1 {
+    font-size: 30px;
+    margin-bottom: 4px;
+}
+
+.profile-page-tabbed > .page-subtitle {
+    font-size: 13px;
+    color: var(--theme-text-faint, #7c6c56);
+    font-family: var(--theme-mono, "IBM Plex Mono", monospace);
+    margin-bottom: 8px;
+}
+
+/* ================= BACKSTAGE PASS ================= */
+.rf-pass-stage {
+    display: flex;
+    justify-content: center;
+    padding: 28px 0 40px;
+}
+
+.rf-pass {
+    position: relative;
+    width: 420px;
+    max-width: 100%;
+    background: radial-gradient(120% 140% at 15% -10%, rgba(226,165,61,0.14), transparent 55%), linear-gradient(175deg, var(--theme-surface-3, #251b10), var(--theme-surface, #17100a) 68%);
+    border: 1px solid var(--theme-border, #3a2c1a);
+    border-radius: 22px;
+    padding: 26px 26px 22px;
+    box-shadow: 0 40px 70px -28px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+    transform: rotate(-1.4deg);
+    transition: transform 0.35s ease, box-shadow 0.35s ease;
+    overflow: hidden;
+}
+
+    .rf-pass::before {
+        /* subtle diagonal sheen, purely decorative */
+        content: "";
+        position: absolute;
+        inset: -40%;
+        background: linear-gradient(115deg, transparent 40%, rgba(255,255,255,0.05) 48%, transparent 56%);
+        pointer-events: none;
+    }
+
+.rf-pass-stage:hover .rf-pass {
+    transform: rotate(0deg) translateY(-3px);
+    box-shadow: 0 48px 80px -26px rgba(0, 0, 0, 0.8), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.rf-pass-clip {
+    width: 50px;
+    height: 13px;
+    margin: 0 auto 2px;
+    background: linear-gradient(180deg, #4a4a4a, #1c1c1c);
+    border-radius: 4px;
+    position: relative;
+    top: 12px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.rf-pass-hole {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    margin: 0 auto 20px;
+    background: var(--theme-bg, #0b0805);
+    border: 2px solid var(--theme-border-soft, #2a2014);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7);
+}
+
+.rf-pass-eyebrow-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+    position: relative;
+}
+
+.rf-pass-badge {
+    font-family: var(--theme-mono, "IBM Plex Mono", monospace);
+    font-size: 10px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, var(--theme-rust, #c85a34), #a8451f);
+    color: #1c0d06;
+    padding: 5px 11px;
+    border-radius: 5px;
+    font-weight: 700;
+    box-shadow: 0 2px 8px rgba(200, 90, 52, 0.35);
+}
+
+.rf-pass-no {
+    font-family: var(--theme-mono, "IBM Plex Mono", monospace);
+    font-size: 11px;
+    color: var(--theme-text-faint, #7c6c56);
+    letter-spacing: 0.04em;
+}
+
+.rf-pass-id {
+    display: flex;
+    gap: 18px;
+    align-items: center;
+    margin-bottom: 24px;
+    position: relative;
+}
+
+.rf-vinyl-avatar {
+    width: 84px;
+    height: 84px;
+    border-radius: 50%;
+    flex: none;
+    position: relative;
+    background: repeating-radial-gradient(circle at center, #100a06 0 2px, #1c1309 2px 4px);
+    border: 1px solid #000;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.5);
+    animation: rf-spin 14s linear infinite;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+    .rf-vinyl-avatar::before {
+        content: "";
+        position: absolute;
+        inset: 0;
+        margin: auto;
+        width: 36px;
+        height: 36px;
+        border-radius: 50%;
+        background: radial-gradient(circle at 35% 30%, var(--theme-gold, #e2a53d), var(--theme-gold-deep, #b9812a));
+        box-shadow: 0 0 12px rgba(226, 165, 61, 0.35);
+    }
+
+@keyframes rf-spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.rf-pass-name-block {
+    flex: 1;
+    min-width: 0;
+}
+
+.rf-pass-name-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 9px;
+    text-align: left;
+    color: inherit;
+    max-width: 100%;
+}
+
+.rf-pass-name {
+    font-family: var(--theme-display, "Playfair Display", Georgia, serif);
+    font-size: 26px;
+    font-weight: 700;
+    line-height: 1.15;
+    margin: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rf-pass-name-edit-hint {
+    font-size: 12px;
+    opacity: 0;
+    color: var(--theme-gold, #e2a53d);
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.rf-pass-name-btn:hover .rf-pass-name-edit-hint,
+.rf-pass-name-btn:focus-visible .rf-pass-name-edit-hint {
+    opacity: 1;
+}
+
+.rf-pass-name-input {
+    font-family: var(--theme-display, "Playfair Display", Georgia, serif);
+    font-size: 25px;
+    font-weight: 700;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--theme-gold, #e2a53d);
+    color: var(--theme-text-primary, #f1ead9);
+    padding: 0 0 3px;
+    outline: none;
+    width: 100%;
+    max-width: 220px;
+}
+
+.rf-pass-email {
+    font-family: var(--theme-mono, "IBM Plex Mono", monospace);
+    font-size: 11.5px;
+    color: var(--theme-text-faint, #7c6c56);
+    margin: 5px 0 10px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rf-pass-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.rf-pass-tag {
+    font-size: 11px;
+    border: 1px solid var(--theme-border, #3a2c1a);
+    border-radius: 999px;
+    padding: 3px 10px;
+    color: var(--theme-text-dim, #b7a68d);
+    background: rgba(255,255,255,0.02);
+}
+
+.rf-pass-tag-skill {
+    border-color: var(--theme-gold-deep, #b9812a);
+    color: var(--theme-gold, #e2a53d);
+    background: rgba(226, 165, 61, 0.08);
+}
+
+.rf-barcode {
+    height: 32px;
+    margin-top: 18px;
+    border-radius: 2px;
+    background: repeating-linear-gradient( 90deg, var(--theme-text-dim, #b7a68d) 0 2px, transparent 2px 5px, var(--theme-text-dim, #b7a68d) 5px 6px, transparent 6px 9px, var(--theme-text-dim, #b7a68d) 9px 12px, transparent 12px 16px, var(--theme-text-dim, #b7a68d) 16px 17px, transparent 17px 22px, var(--theme-text-dim, #b7a68d) 22px 24px, transparent 24px 28px, var(--theme-text-dim, #b7a68d) 28px 29px, transparent 29px 34px, var(--theme-text-dim, #b7a68d) 34px 36px, transparent 36px 41px, var(--theme-text-dim, #b7a68d) 41px 42px, transparent 42px 47px );
+    opacity: 0.7;
+    position: relative;
+}
+
+.rf-barcode-code {
+    font-family: var(--theme-mono, "IBM Plex Mono", monospace);
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    color: var(--theme-text-faint, #7c6c56);
+    margin-top: 7px;
+    text-align: center;
+    position: relative;
+}
+
+/* ================= TABS — segmented control ================= */
+.rf-tab-bar {
+    display: flex;
+    gap: 2px;
+    background: var(--theme-surface, #17100a);
+    border: 1px solid var(--theme-border-soft, #2a2014);
+    border-radius: 14px;
+    padding: 4px;
+    margin: 0 0 32px;
+    overflow-x: auto;
+}
+
+.rf-tab-btn {
+    flex: 1;
+    background: none;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--theme-text-faint, #7c6c56);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: color 0.15s ease, background 0.2s ease;
+}
+
+    .rf-tab-btn:hover {
+        color: var(--theme-text-dim, #b7a68d);
+    }
+
+    .rf-tab-btn.active {
+        color: #1a1109;
+        background: linear-gradient(135deg, var(--theme-gold, #e2a53d), var(--theme-gold-deep, #b9812a));
+        box-shadow: 0 4px 14px rgba(226, 165, 61, 0.3);
+    }
+
+.rf-tab-panel {
+    animation: rf-tab-fade 0.25s ease;
+}
+
+@keyframes rf-tab-fade {
+    from {
+        opacity: 0;
+        transform: translateY(4px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.rf-tab-panel .rf-block:first-child {
+    margin-top: 0;
+}
+
+/* ================= BLOCK SPACING / HEAD ================= */
+.rf-block {
+    margin: 0 0 36px;
+}
+
+    .rf-block:last-child {
+        margin-bottom: 0;
+    }
+
+.rf-block-head h2 {
+    font-size: 19px;
+    margin: 0 0 3px;
+}
+
+.rf-block-sub {
+    font-size: 12.5px;
+    color: var(--theme-text-faint, #7c6c56);
+    margin: 0 0 16px;
+}
+
+/* ================= ACTIONS FOOTER ================= */
+.profile-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+    padding-top: 24px;
+    border-top: 1px solid var(--theme-border-soft, #2a2014);
+}
+
+.profile-saved-msg {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #8fd98f;
+    font-size: 13px;
+    margin-top: 4px;
+}

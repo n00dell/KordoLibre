@@ -31,6 +31,15 @@ const sampleShelfPlaylists: ShelfPlaylist[] = [
 const KNOB_MIN = 5;
 const KNOB_MAX = 60;
 
+type ProfileTab = "overview" | "ai" | "connections" | "preferences";
+
+const TABS: { key: ProfileTab; label: string }[] = [
+    { key: "overview", label: "Overview" },
+    { key: "ai", label: "AI Providers" },
+    { key: "connections", label: "Connections" },
+    { key: "preferences", label: "Preferences" },
+];
+
 function ProfilePage() {
     const { user, logout } = useAuth();
     const [profile, setProfile] = useState<Profile | null>(null);
@@ -39,6 +48,10 @@ function ProfilePage() {
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [saved, setSaved] = useState(false);
+    const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
+
+    const [editingName, setEditingName] = useState(false);
+    const [nameDraft, setNameDraft] = useState("");
 
     // Local-only UI state — see comment above sampleShelfPlaylists.
     const [lastfmConnected, setLastfmConnected] = useState(false);
@@ -85,26 +98,44 @@ function ProfilePage() {
         });
     }
 
-    async function handleSave() {
-        if (!profile) return;
+    async function persistProfile(updated: Profile) {
         setSaving(true);
         setError(null);
         setSaved(false);
         try {
-            const updated = await updateProfile({
-                skillLevel: profile.skillLevel,
-                dailyPracticeGoalMinutes: profile.dailyPracticeGoalMinutes,
-                favoriteGenreIds: profile.favoriteGenreIds ?? [],
-                masteredTechniqueIds: profile.masteredTechniqueIds ?? [],
-                preferredProvider: profile.preferredProvider,
+            const result = await updateProfile({
+                displayName: updated.displayName ?? null,
+                skillLevel: updated.skillLevel,
+                dailyPracticeGoalMinutes: updated.dailyPracticeGoalMinutes,
+                favoriteGenreIds: updated.favoriteGenreIds ?? [],
+                masteredTechniqueIds: updated.masteredTechniqueIds ?? [],
+                preferredProvider: updated.preferredProvider,
             });
-            setProfile(updated);
+            setProfile(result);
             setSaved(true);
         } catch (err) {
             setError((err as Error).message);
         } finally {
             setSaving(false);
         }
+    }
+
+    async function handleSave() {
+        if (!profile) return;
+        await persistProfile(profile);
+    }
+    function startEditingName() {
+        setNameDraft(profile?.displayName ?? "");
+        setEditingName(true);
+    }
+
+    async function confirmNameEdit() {
+        if (!profile) return;
+        const trimmed = nameDraft.trim();
+        setEditingName(false);
+        // Only round-trip to the server if it actually changed.
+        if (trimmed === (profile.displayName ?? "")) return;
+        await persistProfile({ ...profile, displayName: trimmed || null });
     }
 
     if (loading) return <p className="empty-state">Loading profile…</p>;
@@ -116,12 +147,15 @@ function ProfilePage() {
 
     // Derive a display name + initials from the email since Profile has no
     // name field yet. "nathan.drake@gmail.com" -> "Nathan Drake" / "ND".
-    const displayName = user?.email
+    // Fallback to the email-derived name only when no DisplayName has been set yet.
+    const fallbackName = user?.email
         ? user.email
             .split("@")[0]
             .replace(/[._-]+/g, " ")
             .replace(/\b\w/g, (c) => c.toUpperCase())
         : "Guitarist";
+    const displayName = profile.displayName?.trim() || fallbackName;
+
     const initials =
         displayName
             .split(" ")
@@ -148,243 +182,287 @@ function ProfilePage() {
             <h1>Your Profile</h1>
             <p className="page-subtitle">{user?.email}</p>
 
-            {/* ================= BACKSTAGE PASS ================= */}
-            <div className="rf-pass-stage">
-                <div className="rf-pass">
-                    <div className="rf-pass-clip" />
-                    <div className="rf-pass-hole" />
-                    <div className="rf-pass-eyebrow-row">
-                        <span className="rf-pass-badge">All Access · Guitar</span>
-                        <span className="rf-pass-no">№ {serial}</span>
-                    </div>
-                    <div className="rf-pass-id">
-                        <div className="rf-vinyl-avatar">{initials}</div>
-                        <div>
-                            <p className="rf-pass-name">{displayName}</p>
-                            <p className="rf-pass-email">{user?.email}</p>
-                            <div className="rf-pass-tags">
-                                <span className="rf-pass-tag rf-pass-tag-skill">{profile.skillLevel}</span>
-                                <span className="rf-pass-tag">{profile.dailyPracticeGoalMinutes} min/day</span>
+            {/* ================= BACKSTAGE PASS (sticky) ================= */}
+                <div className="rf-pass-stage">
+                    <div className="rf-pass">
+                        <div className="rf-pass-clip" />
+                        <div className="rf-pass-hole" />
+                        <div className="rf-pass-eyebrow-row">
+                            <span className="rf-pass-badge">All Access · Guitar</span>
+                            <span className="rf-pass-no">№ {serial}</span>
+                        </div>
+                        <div className="rf-pass-id">
+                            <div className="rf-vinyl-avatar">{initials}</div>
+                            <div className="rf-pass-name-block">
+                                {editingName ? (
+                                    <input
+                                        className="rf-pass-name-input"
+                                        autoFocus
+                                        value={nameDraft}
+                                        maxLength={40}
+                                        placeholder={fallbackName}
+                                        onChange={(e) => setNameDraft(e.target.value)}
+                                        onBlur={confirmNameEdit}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") confirmNameEdit();
+                                            if (e.key === "Escape") setEditingName(false);
+                                        }}
+                                    />
+                                ) : (
+                                    <button type="button" className="rf-pass-name-btn" onClick={startEditingName} title="Click to edit your display name">
+                                        <p className="rf-pass-name">{displayName}</p>
+                                        <span className="rf-pass-name-edit-hint">✎</span>
+                                    </button>
+                                )}
+                                <p className="rf-pass-email">{user?.email}</p>
+                                <div className="rf-pass-tags">
+                                    <span className="rf-pass-tag rf-pass-tag-skill">{profile.skillLevel}</span>
+                                    <span className="rf-pass-tag">{profile.dailyPracticeGoalMinutes} min/day</span>
+                                </div>
                             </div>
                         </div>
+                        <div className="rf-barcode" />
+                        <div className="rf-barcode-code">RIFFFORGE · {serial} · ALLACCESS</div>
                     </div>
-                    <div className="rf-barcode" />
-                    <div className="rf-barcode-code">RIFFFORGE · {serial} · ALLACCESS</div>
                 </div>
+            
+            {/* ================= TABS ================= */}
+            <div className="rf-tab-bar" role="tablist">
+                {TABS.map((t) => (
+                    <button
+                        key={t.key}
+                        type="button"
+                        role="tab"
+                        aria-selected={activeTab === t.key}
+                        className={`rf-tab-btn${activeTab === t.key ? " active" : ""}`}
+                        onClick={() => setActiveTab(t.key)}
+                    >
+                        {t.label}
+                    </button>
+                ))}
             </div>
 
-            {/* ================= PRACTICE RIG ================= */}
-            <section className="rf-block">
-                <div className="rf-block-head">
-                    <h2>Practice Rig</h2>
-                    <p className="rf-block-sub">Dial in your goal, track where your skill sits.</p>
-                </div>
-                <div className="rf-panel rf-rig">
-                    <div>
-                        <div className="rf-knob-row">
-                            <div className="rf-knob-control">
-                                <div className="rf-knob" style={{ transform: `rotate(${knobDeg}deg)` }}>
-                                    <div className="rf-knob-notch" />
+            <div className="rf-tab-panel">
+                {activeTab === "overview" && (
+                    <section className="rf-block">
+                        <div className="rf-block-head">
+                            <h2>Practice Rig</h2>
+                            <p className="rf-block-sub">Dial in your goal, track where your skill sits.</p>
+                        </div>
+                        <div className="rf-panel rf-rig">
+                            <div>
+                                <div className="rf-knob-row">
+                                    <div className="rf-knob-control">
+                                        <div className="rf-knob" style={{ transform: `rotate(${knobDeg}deg)` }}>
+                                            <div className="rf-knob-notch" />
+                                        </div>
+                                    </div>
+                                    <div className="rf-knob-readout">
+                                        <span className="rf-knob-num">{profile.dailyPracticeGoalMinutes}</span>
+                                        <span className="rf-knob-label">MIN / DAY GOAL</span>
+                                    </div>
+                                </div>
+                                <label className="profile-field rf-goal-input">
+                                    <span>Daily Practice Goal (minutes)</span>
+                                    <input
+                                        type="number"
+                                        min={1}
+                                        value={profile.dailyPracticeGoalMinutes || 0}
+                                        onChange={(e) =>
+                                            setProfile({ ...profile, dailyPracticeGoalMinutes: Number(e.target.value) })
+                                        }
+                                    />
+                                </label>
+                            </div>
+                            <div>
+                                <label className="profile-field">
+                                    <span>Skill Level</span>
+                                    <select
+                                        value={profile.skillLevel || ""}
+                                        onChange={(e) => setProfile({ ...profile, skillLevel: e.target.value })}
+                                    >
+                                        {SKILL_LEVELS.map((level) => (
+                                            <option key={level} value={level}>
+                                                {level}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </label>
+                                <div className="rf-meter">
+                                    {SKILL_LEVELS.map((level, i) => (
+                                        <div key={level} className={`rf-meter-segment${i <= skillIndex ? " lit" : ""}`} />
+                                    ))}
+                                </div>
+                                <div className="rf-meter-labels">
+                                    <span>{SKILL_LEVELS[0]?.toUpperCase()}</span>
+                                    <span>{SKILL_LEVELS[SKILL_LEVELS.length - 1]?.toUpperCase()}</span>
                                 </div>
                             </div>
-                            <div className="rf-knob-readout">
-                                <span className="rf-knob-num">{profile.dailyPracticeGoalMinutes}</span>
-                                <span className="rf-knob-label">MIN / DAY GOAL</span>
-                            </div>
                         </div>
-                        <label className="profile-field rf-goal-input">
-                            <span>Daily Practice Goal (minutes)</span>
-                            <input
-                                type="number"
-                                min={1}
-                                value={profile.dailyPracticeGoalMinutes || 0}
-                                onChange={(e) =>
-                                    setProfile({ ...profile, dailyPracticeGoalMinutes: Number(e.target.value) })
-                                }
+                    </section>
+                )}
+
+                {activeTab === "ai" && (
+                    <section className="rf-block">
+                        <div className="rf-block-head">
+                            <h2>AI Chord Generation</h2>
+                            <p className="rf-block-sub">
+                                Choose which AI provider generates chords/tabs, and add your own API key to use instead of the shared server key.
+                            </p>
+                        </div>
+                        <div className="rf-panel">
+                            <AiProviderSettings
+                                preferredProvider={profile.preferredProvider}
+                                onPreferredProviderChange={(pref) => setProfile({ ...profile, preferredProvider: pref })}
                             />
-                        </label>
-                    </div>
-                    <div>
-                        <label className="profile-field">
-                            <span>Skill Level</span>
-                            <select
-                                value={profile.skillLevel || ""}
-                                onChange={(e) => setProfile({ ...profile, skillLevel: e.target.value })}
-                            >
-                                {SKILL_LEVELS.map((level) => (
-                                    <option key={level} value={level}>
-                                        {level}
-                                    </option>
-                                ))}
-                            </select>
-                        </label>
-                        <div className="rf-meter">
-                            {SKILL_LEVELS.map((level, i) => (
-                                <div key={level} className={`rf-meter-segment${i <= skillIndex ? " lit" : ""}`} />
-                            ))}
                         </div>
-                        <div className="rf-meter-labels">
-                            <span>{SKILL_LEVELS[0]?.toUpperCase()}</span>
-                            <span>{SKILL_LEVELS[SKILL_LEVELS.length - 1]?.toUpperCase()}</span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-            {/* ================= AI PROVIDER ================= */}
-            <section className="rf-block">
-                <div className="rf-block-head">
-                    <h2>AI Chord Generation</h2>
-                    <p className="rf-block-sub">
-                        Choose which AI provider generates chords/tabs, and add your own API key to use instead of the shared server key.
-                    </p>
-                </div>
-                <div className="rf-panel">
-                    <AiProviderSettings
-                        preferredProvider={profile.preferredProvider}
-                        onPreferredProviderChange={(pref) =>
-                            setProfile({ ...profile, preferredProvider: pref })
-                        }
-                    />
-                </div>
-            </section>
-            {/* ================= SOUND SOURCES (UI only, not wired up) ================= */}
-            <section className="rf-block">
-                <div className="rf-block-head">
-                    <h2>Sound Sources</h2>
-                    <p className="rf-block-sub">Plug in a source to scrobble sessions or pull in playlists.</p>
-                </div>
-                <div className="rf-patchbay">
-                    <div className="rf-jack-module rf-jack-lastfm">
-                        <div className="rf-jack-top">
-                            <div className="rf-jack-icon">
-                                <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.6}>
-                                    <circle cx="12" cy="12" r="9" />
-                                    <path d="M12 3v6M9 6h6" />
-                                </svg>
-                            </div>
-                            <div>
-                                <div className="rf-jack-name">Last.fm</div>
-                                <div className="rf-jack-sub">Scrobble every practice session</div>
-                            </div>
-                        </div>
-                        <div className="rf-jack-bottom">
-                            <button
-                                type="button"
-                                className={`rf-patch-switch${lastfmConnected ? " on" : ""}`}
-                                aria-pressed={lastfmConnected}
-                                onClick={() => setLastfmConnected((v) => !v)}
-                            >
-                                <span className="rf-patch-thumb" />
-                            </button>
-                            <span className="rf-patch-status">
-                                <span className={`rf-status-dot${lastfmConnected ? " on" : ""}`} />
-                                {lastfmConnected ? "Connected" : "Tap to connect"}
-                            </span>
-                        </div>
-                    </div>
+                    </section>
+                )}
 
-                    <div className="rf-jack-module rf-jack-spotify">
-                        <div className="rf-jack-top">
-                            <div className="rf-jack-icon">
-                                <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.6}>
-                                    <circle cx="12" cy="12" r="9" />
-                                    <path d="M7 10c4-1.4 7.5-1 10 .8M7.5 13.2c3-1 6-.7 8.3.8M8 16.2c2.2-.7 4.5-.5 6.3.6" />
-                                </svg>
+                {activeTab === "connections" && (
+                    <>
+                        <section className="rf-block">
+                            <div className="rf-block-head">
+                                <h2>Sound Sources</h2>
+                                <p className="rf-block-sub">Plug in a source to scrobble sessions or pull in playlists.</p>
                             </div>
-                            <div>
-                                <div className="rf-jack-name">Spotify</div>
-                                <div className="rf-jack-sub">Import playlists as chord sheets</div>
-                            </div>
-                        </div>
-                        <div className="rf-jack-bottom">
-                            <button
-                                type="button"
-                                className={`rf-patch-switch${spotifyConnected ? " on" : ""}`}
-                                aria-pressed={spotifyConnected}
-                                onClick={() => setSpotifyConnected((v) => !v)}
-                            >
-                                <span className="rf-patch-thumb" />
-                            </button>
-                            <span className="rf-patch-status">
-                                <span className={`rf-status-dot${spotifyConnected ? " on" : ""}`} />
-                                {spotifyConnected ? "Connected" : "Tap to connect"}
-                            </span>
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {/* ================= SHELF (UI only, mock data) ================= */}
-            {spotifyConnected && (
-                <section className="rf-block">
-                    <div className="rf-block-head">
-                        <h2>Your Shelf</h2>
-                        <p className="rf-block-sub">Pulled in from Spotify — add the ones you want to practice.</p>
-                    </div>
-                    <div className="rf-shelf">
-                        {sampleShelfPlaylists.map((p) => (
-                            <div key={p.id} className="rf-shelf-item">
-                                <div className="rf-tape-art">
-                                    <span className="rf-reel l" />
-                                    <span className="rf-reel r" />
+                            <div className="rf-patchbay">
+                                <div className="rf-jack-module rf-jack-lastfm">
+                                    <div className="rf-jack-top">
+                                        <div className="rf-jack-icon">
+                                            <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.6}>
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M12 3v6M9 6h6" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div className="rf-jack-name">Last.fm</div>
+                                            <div className="rf-jack-sub">Scrobble every practice session</div>
+                                        </div>
+                                    </div>
+                                    <div className="rf-jack-bottom">
+                                        <button
+                                            type="button"
+                                            className={`rf-patch-switch${lastfmConnected ? " on" : ""}`}
+                                            aria-pressed={lastfmConnected}
+                                            onClick={() => setLastfmConnected((v) => !v)}
+                                        >
+                                            <span className="rf-patch-thumb" />
+                                        </button>
+                                        <span className="rf-patch-status">
+                                            <span className={`rf-status-dot${lastfmConnected ? " on" : ""}`} />
+                                            {lastfmConnected ? "Connected" : "Tap to connect"}
+                                        </span>
+                                    </div>
                                 </div>
-                                <div className="rf-shelf-title">{p.title}</div>
-                                <div className="rf-shelf-source">
-                                    {p.source} · {p.trackCount} tracks
+
+                                <div className="rf-jack-module rf-jack-spotify">
+                                    <div className="rf-jack-top">
+                                        <div className="rf-jack-icon">
+                                            <svg viewBox="0 0 24 24" fill="none" strokeWidth={1.6}>
+                                                <circle cx="12" cy="12" r="9" />
+                                                <path d="M7 10c4-1.4 7.5-1 10 .8M7.5 13.2c3-1 6-.7 8.3.8M8 16.2c2.2-.7 4.5-.5 6.3.6" />
+                                            </svg>
+                                        </div>
+                                        <div>
+                                            <div className="rf-jack-name">Spotify</div>
+                                            <div className="rf-jack-sub">Import playlists as chord sheets</div>
+                                        </div>
+                                    </div>
+                                    <div className="rf-jack-bottom">
+                                        <button
+                                            type="button"
+                                            className={`rf-patch-switch${spotifyConnected ? " on" : ""}`}
+                                            aria-pressed={spotifyConnected}
+                                            onClick={() => setSpotifyConnected((v) => !v)}
+                                        >
+                                            <span className="rf-patch-thumb" />
+                                        </button>
+                                        <span className="rf-patch-status">
+                                            <span className={`rf-status-dot${spotifyConnected ? " on" : ""}`} />
+                                            {spotifyConnected ? "Connected" : "Tap to connect"}
+                                        </span>
+                                    </div>
                                 </div>
-                                <button type="button" className="rf-shelf-add">
-                                    + Add to Library
-                                </button>
                             </div>
-                        ))}
-                    </div>
-                </section>
-            )}
+                        </section>
 
-            {/* ================= GENRES ================= */}
-            {options && options.genres && options.genres.length > 0 && (
-                <section className="rf-block">
-                    <div className="rf-block-head">
-                        <h2>Favorite Genres</h2>
-                        <p className="rf-block-sub">Shapes what shows up first in Search.</p>
-                    </div>
-                    <div className="profile-chip-select">
-                        {options.genres.map((g) => (
-                            <button
-                                type="button"
-                                key={g.id}
-                                className={`profile-chip${favoriteGenreIds.includes(g.id) ? " active" : ""}`}
-                                onClick={() => toggleGenre(g.id)}
-                            >
-                                {g.name}
-                            </button>
-                        ))}
-                    </div>
-                </section>
-            )}
+                        {spotifyConnected && (
+                            <section className="rf-block">
+                                <div className="rf-block-head">
+                                    <h2>Your Shelf</h2>
+                                    <p className="rf-block-sub">Pulled in from Spotify — add the ones you want to practice.</p>
+                                </div>
+                                <div className="rf-shelf">
+                                    {sampleShelfPlaylists.map((p) => (
+                                        <div key={p.id} className="rf-shelf-item">
+                                            <div className="rf-tape-art">
+                                                <span className="rf-reel l" />
+                                                <span className="rf-reel r" />
+                                            </div>
+                                            <div className="rf-shelf-title">{p.title}</div>
+                                            <div className="rf-shelf-source">
+                                                {p.source} · {p.trackCount} tracks
+                                            </div>
+                                            <button type="button" className="rf-shelf-add">
+                                                + Add to Library
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </>
+                )}
 
-            {/* ================= TECHNIQUES ================= */}
-            {options && options.techniques && options.techniques.length > 0 && (
-                <section className="rf-block">
-                    <div className="rf-block-head">
-                        <h2>Mastered Techniques</h2>
-                        <p className="rf-block-sub">Songs using only these will show a "ready" badge.</p>
-                    </div>
-                    <div className="profile-chip-select">
-                        {options.techniques.map((t) => (
-                            <button
-                                type="button"
-                                key={t.id}
-                                className={`profile-chip${masteredTechniqueIds.includes(t.id) ? " active" : ""}`}
-                                onClick={() => toggleTechnique(t.id)}
-                            >
-                                {t.name}
-                            </button>
-                        ))}
-                    </div>
-                </section>
-            )}
+                {activeTab === "preferences" && (
+                    <>
+                        {options && options.genres && options.genres.length > 0 && (
+                            <section className="rf-block">
+                                <div className="rf-block-head">
+                                    <h2>Favorite Genres</h2>
+                                    <p className="rf-block-sub">Shapes what shows up first in Search.</p>
+                                </div>
+                                <div className="profile-chip-select">
+                                    {options.genres.map((g) => (
+                                        <button
+                                            type="button"
+                                            key={g.id}
+                                            className={`profile-chip${favoriteGenreIds.includes(g.id) ? " active" : ""}`}
+                                            onClick={() => toggleGenre(g.id)}
+                                        >
+                                            {g.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
 
+                        {options && options.techniques && options.techniques.length > 0 && (
+                            <section className="rf-block">
+                                <div className="rf-block-head">
+                                    <h2>Mastered Techniques</h2>
+                                    <p className="rf-block-sub">Songs using only these will show a "ready" badge.</p>
+                                </div>
+                                <div className="profile-chip-select">
+                                    {options.techniques.map((t) => (
+                                        <button
+                                            type="button"
+                                            key={t.id}
+                                            className={`profile-chip${masteredTechniqueIds.includes(t.id) ? " active" : ""}`}
+                                            onClick={() => toggleTechnique(t.id)}
+                                        >
+                                            {t.name}
+                                        </button>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+                    </>
+                )}
+            </div>
+
+            {error && <p className="empty-state" style={{ color: "#f87171" }}>{error}</p>}
             {saved && <p className="profile-saved-msg">Saved.</p>}
 
             <div className="profile-actions">

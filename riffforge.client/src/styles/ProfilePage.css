@@ -675,3 +675,100 @@
     font-family: var(--theme-mono, "IBM Plex Mono", monospace);
     color: var(--theme-text-dim, #b7a68d);
 }
+/* ================= STICKY PASS ================= */
+.rf-pass-sticky {
+    position: sticky;
+    top: 76px; /* clears the navbar */
+    z-index: 5;
+    background: var(--theme-bg, #0b0805);
+    padding-top: 4px;
+}
+
+/* ================= NAME EDIT ================= */
+.rf-pass-name-block {
+    flex: 1;
+    min-width: 0;
+}
+
+.rf-pass-name-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: baseline;
+    gap: 8px;
+    text-align: left;
+    color: inherit;
+}
+
+.rf-pass-name-edit-hint {
+    font-size: 12px;
+    opacity: 0;
+    color: var(--theme-gold, #e2a53d);
+    transition: opacity 0.15s;
+}
+
+.rf-pass-name-btn:hover .rf-pass-name-edit-hint,
+.rf-pass-name-btn:focus-visible .rf-pass-name-edit-hint {
+    opacity: 1;
+}
+
+.rf-pass-name-input {
+    font-family: var(--theme-display, "Playfair Display", Georgia, serif);
+    font-size: 25px;
+    font-weight: 700;
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid var(--theme-gold, #e2a53d);
+    color: var(--theme-text-primary, #f1ead9);
+    padding: 0 0 2px;
+    outline: none;
+    width: 100%;
+    max-width: 260px;
+}
+
+/* ================= TABS ================= */
+.rf-tab-bar {
+    display: flex;
+    gap: 6px;
+    border-bottom: 1px solid var(--theme-border-soft, #2a2014);
+    margin: 8px 0 28px;
+    overflow-x: auto;
+}
+
+.rf-tab-btn {
+    background: none;
+    border: none;
+    padding: 10px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--theme-text-faint, #7c6c56);
+    cursor: pointer;
+    position: relative;
+    white-space: nowrap;
+    transition: color 0.15s;
+}
+
+    .rf-tab-btn:hover {
+        color: var(--theme-text-dim, #b7a68d);
+    }
+
+    .rf-tab-btn.active {
+        color: var(--theme-gold, #e2a53d);
+    }
+
+        .rf-tab-btn.active::after {
+            content: "";
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: -1px;
+            height: 2px;
+            background: var(--theme-gold, #e2a53d);
+            border-radius: 2px 2px 0 0;
+        }
+
+.rf-tab-panel .rf-block:first-child {
+    margin-top: 0;
+}

@@ -12,6 +12,7 @@ export interface ProfileOptions {
 
 export interface Profile {
     email: string;
+    displayName?: string | null;
     skillLevel: string;
     dailyPracticeGoalMinutes: number;
     favoriteGenreIds: number[];
@@ -22,6 +23,7 @@ export interface Profile {
 
 export interface UpdateProfileRequest {
     skillLevel: string;
+    displayName?: string | null;
     dailyPracticeGoalMinutes: number;
     favoriteGenreIds: number[];
     masteredTechniqueIds: number[];

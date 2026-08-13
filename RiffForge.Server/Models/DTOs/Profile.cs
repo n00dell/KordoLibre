@@ -3,6 +3,7 @@
     public class ProfileDto
     {
         public string Email { get; set; } = string.Empty;
+        public string? DisplayName { get; set; }
         public string SkillLevel { get; set; } = string.Empty; // enum name as string, e.g. "Intermediate"
         public int DailyPracticeGoalMinutes { get; set; }
         public List<int> FavoriteGenreIds { get; set; } = new();
@@ -14,6 +15,7 @@
 
     public class UpdateProfileRequest
     {
+        public string? DisplayName { get; set; }
         public string SkillLevel { get; set; } = string.Empty;
         public int DailyPracticeGoalMinutes { get; set; }
         public List<int> FavoriteGenreIds { get; set; } = new();

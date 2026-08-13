@@ -63,6 +63,7 @@ namespace RiffForge.Server.Controllers
             profile.SkillLevel = skillLevel;
             profile.DailyPracticeGoalMinutes = req.DailyPracticeGoalMinutes;
             profile.PreferredProvider = preferredProvider;
+            profile.DisplayName  = req.DisplayName;
 
             var genres = await _db.Genres.Where(g => req.FavoriteGenreIds.Contains(g.Id)).ToListAsync(ct);
             profile.FavoriteGenres.Clear();
@@ -119,7 +120,8 @@ namespace RiffForge.Server.Controllers
             DailyPracticeGoalMinutes = profile.DailyPracticeGoalMinutes,
             FavoriteGenreIds = profile.FavoriteGenres.Select(g => g.Id).ToList(),
             MasteredTechniqueIds = profile.MasteredTechniques.Select(t => t.Id).ToList(),
-            PreferredProvider = profile.PreferredProvider.ToString()
+            PreferredProvider = profile.PreferredProvider.ToString(),
+            DisplayName = profile.DisplayName
         };
 
         private string? GetUserId() =>

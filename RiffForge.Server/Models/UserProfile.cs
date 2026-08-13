@@ -11,6 +11,7 @@ namespace RiffForge.Server.Models
         [Required]
         public string UserId { get; set; } = string.Empty; // If using Identity
 
+        public string? DisplayName { get; set; }
         public Difficulty SkillLevel { get; set; }
 
         //public List<string> FavoriteGenres { get; set; } = new List<string>();
