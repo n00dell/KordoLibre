@@ -221,6 +221,11 @@ function SongDetailPage() {
         }
     }
     const [notationError, setNotationError] = useState<string | null>(null);
+    const structuredTab = useMemo(() => {
+        if (!selectedVersion?.structuredTabJson) return null;
+        try { return JSON.parse(selectedVersion.structuredTabJson); }
+        catch { return null; }
+    }, [selectedVersion]);
 
     async function requestOtherNotation(targetNotationType: 0 | 1) {
               if (!song || generatingNotation) return;
@@ -264,10 +269,11 @@ function SongDetailPage() {
 
     const rawSheet = selectedVersion?.tabData || song.lyrics || "No chords available.";
     const lines = rawSheet.split("\n");
-    const isTab = selectedVersion
-        ? selectedVersion.notationType === 1 || (selectedVersion.notationType == null && looksLikeTab(rawSheet))
-        : false;
 
+    const isTab = selectedVersion
+        ? selectedVersion.notationType === "TabNotation" || (selectedVersion.notationType == null && looksLikeTab(rawSheet))
+        : false;
+    
     return (
         <div className="song-detail-page">
             <Link to="/" className="back-link">
@@ -312,7 +318,7 @@ function SongDetailPage() {
                                 cursor: "pointer"
                             }}
                         >
-                            {v.isDefault ? "Target Version (Original)" : "Alternate Version"} ({v.difficulty})
+                            {v.isDefault ? "Original" : "Alternate"} · {v.notationType === "TabNotation" ? "Tab" : "Chords"} ({v.difficulty})
                         </button>
                     ))}
                 </div>
@@ -332,13 +338,13 @@ function SongDetailPage() {
 
             {selectedVersion && (
                 <div className="notation-switch fade-in-content" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", margin: "0.5rem 0" }}>
-                    {!song.versions?.some((v) => v.notationType === 1) && (
-                        <button type="button" className="notation-gen-btn" onClick={() => requestOtherNotation(1)} disabled={generatingNotation}>
+                    {!song.versions?.some((v) => v.notationType === "TabNotation") && (
+                        <button className="notation-gen-btn" type="button" onClick={() => requestOtherNotation(1)} disabled={generatingNotation}>
                             {generatingNotation ? "Generating…" : "Generate Tab Version"}
                         </button>
                     )}
-                    {!song.versions?.some((v) => v.notationType === 0) && (
-                        <button type="button" className="notation-gen-btn" onClick={() => requestOtherNotation(0)} disabled={generatingNotation}>
+                    {!song.versions?.some((v) => v.notationType === "ChordsOverLyrics") && (
+                        <button className="notation-gen-btn" type="button" onClick={() => requestOtherNotation(0)} disabled={generatingNotation}>
                             {generatingNotation ? "Generating…" : "Generate Chords-Over-Lyrics Version"}
                         </button>
                     )}
@@ -354,7 +360,7 @@ function SongDetailPage() {
                 <h2>Chords &amp; Lyrics</h2>
                 <div className="chord-sheet-container" style={{ maxWidth: "800px" }}>
                     {isTab ? (
-                        <TabBlock tabData={rawSheet} />
+                        <TabBlock tabData={rawSheet} structuredTab={structuredTab}/>
                     ) : (
                         lines.map((line, index) => (
                             <ChordLyricLine key={index} line={line} chordFrets={chordFretMap} />

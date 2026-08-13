@@ -109,6 +109,11 @@ Requirements:
    the bracket format described above). If notationType is 1, 'tabData' should
    contain standard ASCII tab (one line per string, e|B|G|D|A|E, using '-' for
    rests and fret numbers for notes) instead of bracketed lyrics.
+8. If notationType is 1 (tab), ALSO populate structuredTab: break the tab into
+sections by song part (Intro, Verse, Chorus, etc.), each with a columns array where 
+each column is one rhythmic position and has a frets array of exactly 6 integers ordere
+d low string (6th/E) to high string (1st/e), using -1 for a string not played in that column.
+Keep tabData populated too as a plain-text fallback of the same tab.
 Base Lyrics to embed chords into:
 {lyrics ?? "Use exact song lyrics."}";
 
@@ -210,29 +215,44 @@ Base Lyrics to embed chords into:
             ["type"] = "OBJECT",
             ["properties"] = new JsonObject
             {
-                ["tabData"] = new JsonObject { ["type"] = "STRING" },
-                ["strumPattern"] = new JsonObject { ["type"] = "INTEGER" },
-                ["tuning"] = new JsonObject { ["type"] = "INTEGER" },
-                ["capoPos"] = new JsonObject { ["type"] = "INTEGER" },
-                ["difficulty"] = new JsonObject { ["type"] = "INTEGER" },
-                ["notationType"] = new JsonObject { ["type"] = "INTEGER" },
-                ["chordDefinitions"] = new JsonObject
+                ["structuredTab"] = new JsonObject
                 {
-                    ["type"] = "ARRAY",
-                    ["items"] = new JsonObject
+                    ["type"] = "OBJECT",
+                    ["properties"] = new JsonObject
                     {
-                        ["type"] = "OBJECT",
-                        ["properties"] = new JsonObject
+                        ["sections"] = new JsonObject
                         {
-                            ["name"] = new JsonObject { ["type"] = "STRING" },
-                            ["frets"] = new JsonObject { ["type"] = "STRING" },
-                            ["isBarre"] = new JsonObject { ["type"] = "BOOLEAN" }
-                        },
-                        ["required"] = new JsonArray { "name", "frets", "isBarre" }
+                            ["type"] = "ARRAY",
+                            ["items"] = new JsonObject
+                            {
+                                ["type"] = "OBJECT",
+                                ["properties"] = new JsonObject
+                                {
+                                    ["label"] = new JsonObject { ["type"] = "STRING" },
+                                    ["columns"] = new JsonObject
+                                    {
+                                        ["type"] = "ARRAY",
+                                        ["items"] = new JsonObject
+                                        {
+                                            ["type"] = "OBJECT",
+                                            ["properties"] = new JsonObject
+                                            {
+                                                ["frets"] = new JsonObject
+                                                {
+                                                    ["type"] = "ARRAY",
+                                                    ["items"] = new JsonObject { ["type"] = "INTEGER" }
+                                                }
+                                            },
+                                            ["required"] = new JsonArray { "frets" }
+                                        }
+                                    }
+                                },
+                                ["required"] = new JsonArray { "columns" }
+                            }
+                        }
                     }
                 }
-            },
-            ["required"] = new JsonArray { "tabData", "strumPattern", "tuning", "capoPos", "difficulty", "notationType", "chordDefinitions" }
+            }
         };
 
         private static JsonObject GetArrangementSchema()
@@ -242,29 +262,44 @@ Base Lyrics to embed chords into:
                 ["type"] = "OBJECT",
                 ["properties"] = new JsonObject
                 {
-                    ["tabData"] = new JsonObject { ["type"] = "STRING" },
-                    ["strumPattern"] = new JsonObject { ["type"] = "INTEGER" },
-                    ["tuning"] = new JsonObject { ["type"] = "INTEGER" },
-                    ["capoPos"] = new JsonObject { ["type"] = "INTEGER" },
-                    ["difficulty"] = new JsonObject { ["type"] = "INTEGER" },
-                    ["notationType"] = new JsonObject { ["type"] = "INTEGER" },
-                    ["chordDefinitions"] = new JsonObject
+                    ["structuredTab"] = new JsonObject
                     {
-                        ["type"] = "ARRAY",
-                        ["items"] = new JsonObject
+                        ["type"] = "OBJECT",
+                        ["properties"] = new JsonObject
                         {
-                            ["type"] = "OBJECT",
-                            ["properties"] = new JsonObject
+                            ["sections"] = new JsonObject
                             {
-                                ["name"] = new JsonObject { ["type"] = "STRING" },
-                                ["frets"] = new JsonObject { ["type"] = "STRING" },
-                                ["isBarre"] = new JsonObject { ["type"] = "BOOLEAN" }
-                            },
-                            ["required"] = new JsonArray { "name", "frets", "isBarre" }
+                                ["type"] = "ARRAY",
+                                ["items"] = new JsonObject
+                                {
+                                    ["type"] = "OBJECT",
+                                    ["properties"] = new JsonObject
+                                    {
+                                        ["label"] = new JsonObject { ["type"] = "STRING" },
+                                        ["columns"] = new JsonObject
+                                        {
+                                            ["type"] = "ARRAY",
+                                            ["items"] = new JsonObject
+                                            {
+                                                ["type"] = "OBJECT",
+                                                ["properties"] = new JsonObject
+                                                {
+                                                    ["frets"] = new JsonObject
+                                                    {
+                                                        ["type"] = "ARRAY",
+                                                        ["items"] = new JsonObject { ["type"] = "INTEGER" }
+                                                    }
+                                                },
+                                                ["required"] = new JsonArray { "frets" }
+                                            }
+                                        }
+                                    },
+                                    ["required"] = new JsonArray { "columns" }
+                                }
+                            }
                         }
                     }
-                },
-                ["required"] = new JsonArray { "tabData", "strumPattern", "tuning", "capoPos", "difficulty", "notationType", "chordDefinitions" }
+                }
             };
 
             return new JsonObject

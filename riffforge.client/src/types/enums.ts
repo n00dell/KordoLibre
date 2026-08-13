@@ -79,3 +79,9 @@ export const TechniqueCategory = {
     Rhythm: "Rhythm",
 } as const;
 export type TechniqueCategory = (typeof TechniqueCategory)[keyof typeof TechniqueCategory];
+
+export const NotationType = {
+    ChordsOverLyrics: "ChordsOverLyrics",
+    TabNotation: "TabNotation",
+} as const;
+export type NotationType = (typeof NotationType)[keyof typeof NotationType];

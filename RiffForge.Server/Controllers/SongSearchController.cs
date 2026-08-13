@@ -260,7 +260,10 @@ namespace RiffForge.Server.Controllers
                     Difficulty = generatedChords.OriginalVersion.Difficulty,
                     IsDefault = true,
                     SourceName = "Gemini AI (Original Accurate)",
-                    DateScraped = DateTime.UtcNow
+                    DateScraped = DateTime.UtcNow,
+                    StructuredTabJson = generatedChords.OriginalVersion.StructuredTab != null
+    ? System.Text.Json.JsonSerializer.Serialize(generatedChords.OriginalVersion.StructuredTab)
+    : null,
                 };
 
                 // 2. Alternate Version
@@ -274,7 +277,10 @@ namespace RiffForge.Server.Controllers
                     Difficulty = generatedChords.AlternateVersion.Difficulty,
                     IsDefault = false,
                     SourceName = "Gemini AI (Simplified Alt)",
-                    DateScraped = DateTime.UtcNow
+                    DateScraped = DateTime.UtcNow,
+                    StructuredTabJson = generatedChords.AlternateVersion.StructuredTab != null
+    ? System.Text.Json.JsonSerializer.Serialize(generatedChords.AlternateVersion.StructuredTab)
+    : null,
                 };
                 originalVer.Chords = await _chordResolver.ResolveChordsAsync(
     generatedChords.OriginalVersion.ChordDefinitions, originalVer.Tuning, originalVer.Difficulty, ct);

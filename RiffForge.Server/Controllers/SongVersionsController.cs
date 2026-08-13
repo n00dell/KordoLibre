@@ -84,7 +84,10 @@ namespace RiffForge.Server.Controllers
                     ? "Gemini AI (Tab, on-demand)"
                     : "Gemini AI (Chords, on-demand)",
                 DateScraped = DateTime.UtcNow,
-                Chords = await _chordResolver.ResolveChordsAsync(arrangement.ChordDefinitions, arrangement.Tuning, arrangement.Difficulty, ct)
+                Chords = await _chordResolver.ResolveChordsAsync(arrangement.ChordDefinitions, arrangement.Tuning, arrangement.Difficulty, ct),
+                StructuredTabJson = arrangement.StructuredTab != null
+    ? System.Text.Json.JsonSerializer.Serialize(arrangement.StructuredTab)
+    : null,
             };
 
             _db.SongVersions.Add(version);

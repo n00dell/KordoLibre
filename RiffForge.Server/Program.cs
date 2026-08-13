@@ -81,6 +81,7 @@ builder.Services.AddControllers()
 
         // 2. Serializes Enums as strings ("Completed" instead of 2)
         options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+
     });
 builder.Services.AddOpenApi();
 builder.Services.AddSwaggerGen();

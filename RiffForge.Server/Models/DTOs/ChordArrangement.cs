@@ -28,6 +28,8 @@ namespace RiffForge.Server.Models.DTOs
         public NotationType NotationType { get; set; }
         [JsonPropertyName("chordDefinitions")]
         public List<ChordDefinition> ChordDefinitions { get; set; } = new();
+        [JsonPropertyName("structuredTab")]
+        public StructuredTab? StructuredTab { get; set; }
     }
 
     public class GeminiChordResponse

@@ -48,7 +48,13 @@ namespace RiffForge.Server.Services.Validation
                 throw new AiOutputValidationException(providerKey, "notationType=Tab but tabData isn't ASCII tab.");
             if (arrangement.NotationType != NotationType.TabNotation && !arrangement.TabData.Contains('['))
                 throw new AiOutputValidationException(providerKey, "notationType=Chords but tabData has no bracketed chords.");
-
+            if (arrangement.StructuredTab?.Sections != null)
+            {
+                bool valid = arrangement.StructuredTab.Sections
+                    .SelectMany(s => s.Columns)
+                    .All(c => c.Frets.Count == 6);
+                if (!valid) arrangement.StructuredTab = null; // fall back to ASCII rendering rather than fail the whole request
+            }
             if (arrangement.ChordDefinitions == null || arrangement.ChordDefinitions.Count == 0)
                 throw new AiOutputValidationException(providerKey, "Arrangement has no chordDefinitions.");
 

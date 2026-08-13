@@ -57,6 +57,11 @@ Requirements:
    instrumental and is best represented as six-line ASCII guitar tablature (one line per
    string, e|B|G|D|A|E, '-' for rests, fret numbers for notes). Otherwise set it to 0
    (chords inline, bracket format above).
+7. If notationType is 1 (tab), ALSO populate structuredTab: break the tab into sections by 
+    song part (Intro, Verse, Chorus, etc.), each with a columns array where each column is one
+    rhythmic position and has a frets array of exactly 6 integers ordered low string (6th/E) 
+    to high string (1st/e), using -1 for a string not played in that column. Keep tabData
+    populated too as a plain-text fallback of the same tab.
 
 Base Lyrics to embed chords into:
 {lyrics ?? "Use exact song lyrics."}";
@@ -101,6 +106,7 @@ target player level requires substituting easier voicings.
 For each chord in 'chordDefinitions', set 'isBarre' to true only if the voicing
 requires one finger to fret multiple strings at the same fret (a true barre shape),
 not just because the chord starts above fret 0.
+
 
 Base Lyrics (for timing/structure reference only):
 {lyrics ?? "Use exact song lyrics."}";
@@ -277,34 +283,39 @@ Base Lyrics (for timing/structure reference only):
 
         private static JsonObject BuildArrangementSchema() => new()
         {
-            ["type"] = "object",
-            ["properties"] = new JsonObject
+            ["structuredTab"] = new JsonObject
             {
-                ["tabData"] = new JsonObject { ["type"] = "string" },
-                ["strumPattern"] = new JsonObject { ["type"] = "integer" },
-                ["tuning"] = new JsonObject { ["type"] = "integer" },
-                ["capoPos"] = new JsonObject { ["type"] = "integer" },
-                ["difficulty"] = new JsonObject { ["type"] = "integer" },
-                ["notationType"] = new JsonObject { ["type"] = "integer" },
-                ["chordDefinitions"] = new JsonObject
+                ["type"] = "object",
+                ["properties"] = new JsonObject
                 {
-                    ["type"] = "array",
-                    ["items"] = new JsonObject
+                    ["sections"] = new JsonObject
                     {
-                        ["type"] = "object",
-                        ["properties"] = new JsonObject
+                        ["type"] = "array",
+                        ["items"] = new JsonObject
                         {
-                            ["name"] = new JsonObject { ["type"] = "string" },
-                            ["frets"] = new JsonObject { ["type"] = "string" },
-                            ["isBarre"] = new JsonObject { ["type"] = "boolean" }
-                        },
-                        ["required"] = new JsonArray { "name", "frets", "isBarre" }
+                            ["type"] = "object",
+                            ["properties"] = new JsonObject
+                            {
+                                ["label"] = new JsonObject { ["type"] = "string" },
+                                ["columns"] = new JsonObject
+                                {
+                                    ["type"] = "array",
+                                    ["items"] = new JsonObject
+                                    {
+                                        ["type"] = "object",
+                                        ["properties"] = new JsonObject
+                                        {
+                                            ["frets"] = new JsonObject { ["type"] = "array", ["items"] = new JsonObject { ["type"] = "integer" } }
+                                        },
+                                        ["required"] = new JsonArray { "frets" }
+                                    }
+                                }
+                            },
+                            ["required"] = new JsonArray { "columns" }
+                        }
                     }
                 }
-            },
-            ["required"] = new JsonArray
-            {
-                "tabData", "strumPattern", "tuning", "capoPos", "difficulty", "notationType", "chordDefinitions"
+                // deliberately NOT added to the outer "required" array — only relevant when notationType = tab
             }
         };
 

@@ -1644,3 +1644,93 @@ a {
         opacity: 0.5;
         cursor: default;
     }
+.tab-grid-wrap {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 20px 18px;
+    overflow-x: auto;
+}
+
+.tab-section {
+    margin-bottom: 28px;
+}
+
+    .tab-section:last-child {
+        margin-bottom: 0;
+    }
+
+.tab-section-label {
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 10px;
+}
+
+.tab-grid {
+    display: grid;
+    grid-auto-rows: 26px;
+    align-items: center;
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    width: max-content;
+}
+
+.tab-string-label {
+    color: var(--accent);
+    font-weight: 700;
+    padding-right: 6px;
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+.tab-cell {
+    text-align: center;
+    color: #e5e5e5;
+    border-bottom: 1px solid rgba(255,255,255,0.25);
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tab-measure-start {
+    border-left: 1px dashed rgba(255,255,255,0.15);
+}
+
+.tab-ascii-fallback {
+    font-family: 'Courier New', monospace;
+    font-size: 0.9rem;
+    line-height: 1.6;
+    color: #e5e5e5;
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 8px;
+    padding: 18px;
+    overflow-x: auto;
+    white-space: pre;
+}
+
+.tab-string-letter {
+    color: var(--accent);
+    font-weight: 700;
+}
+
+.tab-copy-btn {
+    padding: 6px 14px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+    .tab-copy-btn:hover {
+        border-color: var(--accent);
+        color: var(--accent);
+    }
