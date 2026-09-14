@@ -29,15 +29,19 @@ namespace RiffForge.Server.Models
         public Difficulty Difficulty { get; set; }
 
         [Range(0, 5)]
-        public decimal Rating { get; set; } // rating for THIS version, not the song overall
+        public decimal Rating { get; set; } 
 
-        public int RatingCount { get; set; } // how many people rated it, for a weighted "best version" sort
+        public int RatingCount { get; set; } 
 
-        public bool IsDefault { get; set; } // which version shows first when the song loads
+        public bool IsDefault { get; set; }
 
         [MaxLength(100)]
-        public string? ContributorName { get; set; } // whoever posted it on the source site
-
+        public string? ContributorName { get; set; } 
+        
+        public bool IsUserSubmission { get; set; }
+        
+        public string? ContributorUserId { get; set; }
+        
         [MaxLength(500)]
         public string? SourceUrl { get; set; }
 

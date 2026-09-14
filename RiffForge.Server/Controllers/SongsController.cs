@@ -61,6 +61,7 @@ namespace RiffForge.Server.Controllers
                     // Fall through and return what we have — stale/missing chords beat a 500.
                 }
             }
+            song.Versions = song.Versions.Where(v => !v.IsUserSubmission).ToList();
             return Ok(song);
         }
 
@@ -82,7 +83,7 @@ namespace RiffForge.Server.Controllers
 
 
             // Clear old AI-generated default versions if updating
-            var existingVersions = song.Versions.ToList();
+            var existingVersions = song.Versions.Where(v => !v.IsUserSubmission).ToList();
             _db.SongVersions.RemoveRange(existingVersions);
 
             // 1. Add Original Accurate Version (IsDefault = true)

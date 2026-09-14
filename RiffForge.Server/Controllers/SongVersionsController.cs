@@ -1,4 +1,5 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -31,11 +32,7 @@ namespace RiffForge.Server.Controllers
 
         public record GenerateVersionRequest(NotationType NotationType, Difficulty? Difficulty = null);
 
-        // POST /api/songs/5/versions/generate
-        // Generates a version in a SPECIFIC notation (tab or chords-over-lyrics),
-        // e.g. "this song only has a strum version, give me the fingerpicked tab
-        // instead." Checks for an existing matching version first so the same
-        // notation is never generated twice for the same song.
+        
         [HttpPost("generate")]
         public async Task<ActionResult<SongVersion>> GenerateVersion(
             int songId, [FromBody] GenerateVersionRequest req, CancellationToken ct)
@@ -95,7 +92,129 @@ namespace RiffForge.Server.Controllers
 
             return Ok(version);
         }
+        [HttpGet("submissions")]
+public async Task<ActionResult<List<UserSubmission.UserSubmissionDto>>> GetSubmissions(int songId, CancellationToken ct)
+{
+    var submissions = await _db.SongVersions
+        .Where(v => v.SongId == songId && v.IsUserSubmission)
+        .OrderByDescending(v => v.Rating)
+        .ThenByDescending(v => v.DateScraped)
+        .ToListAsync(ct);
 
-        
+    var contributorIds = submissions
+        .Where(s => s.ContributorUserId != null)
+        .Select(s => s.ContributorUserId!)
+        .Distinct()
+        .ToList();
+
+    var displayNames = await _db.UserProfiles
+        .Where(p => contributorIds.Contains(p.UserId))
+        .ToDictionaryAsync(p => p.UserId, p => p.DisplayName, ct);
+
+    var result = submissions.Select(v => new UserSubmission.UserSubmissionDto
+    {
+        Id = v.Id,
+        TabData = v.TabData ?? string.Empty,
+        Tuning = v.Tuning.ToString(),
+        CapoPos = v.CapoPos.ToString(),
+        Difficulty = v.Difficulty.ToString(),
+        StrumPattern = v.StrumPattern.ToString(),
+        Rating = v.Rating,
+        RatingCount = v.RatingCount,
+        ContributorName = v.ContributorUserId != null
+            && displayNames.TryGetValue(v.ContributorUserId, out var dn)
+            && !string.IsNullOrWhiteSpace(dn)
+                ? dn!
+                : (v.ContributorName ?? "A fellow guitarist"),
+        DateScraped = v.DateScraped
+    }).ToList();
+
+    return Ok(result);
+}
+
+// POST /api/songs/5/versions/submit
+[HttpPost("submit")]
+public async Task<ActionResult<UserSubmission.UserSubmissionDto>> Submit(int songId, [FromBody] UserSubmission.SubmitVersionRequest req, CancellationToken ct)
+{
+    var song = await _db.Songs.FirstOrDefaultAsync(s => s.Id == songId, ct);
+    if (song is null) return NotFound("Song not found.");
+
+    if (string.IsNullOrWhiteSpace(req.TabData))
+        return BadRequest("Submission can't be empty.");
+    if (!req.TabData.Contains('['))
+        return BadRequest("Add at least one chord in [brackets], e.g. [C]Lyrics here.");
+
+    if (!Enum.TryParse<Tuning>(req.Tuning, true, out var tuning))
+        return BadRequest($"Invalid tuning: {req.Tuning}");
+    if (!Enum.TryParse<CapoPos>(req.CapoPos, true, out var capoPos))
+        return BadRequest($"Invalid capo position: {req.CapoPos}");
+    if (!Enum.TryParse<Difficulty>(req.Difficulty, true, out var difficulty))
+        return BadRequest($"Invalid difficulty: {req.Difficulty}");
+    if (!Enum.TryParse<StrumPattern>(req.StrumPattern, true, out var strumPattern))
+        return BadRequest($"Invalid strum pattern: {req.StrumPattern}");
+
+    var userId = GetUserId();
+    if (userId is null) return Unauthorized();
+
+    var profile = await _db.UserProfiles.FirstOrDefaultAsync(p => p.UserId == userId, ct);
+    var contributorName = !string.IsNullOrWhiteSpace(profile?.DisplayName)
+        ? profile!.DisplayName!
+        : (User.FindFirstValue(ClaimTypes.Email) ?? "A fellow guitarist");
+
+    // Same bracket convention as the AI versions — [Chord] right before the
+    // syllable it's played on. We only need the names here; ChordDiagram/
+    // lookupChordInfo on the frontend fills in the actual fret shape for
+    // anything it recognizes.
+    var chordNames = System.Text.RegularExpressions.Regex
+        .Matches(req.TabData, @"\[([A-G][b#]?[\w#/]*)\]")
+        .Select(m => m.Groups[1].Value)
+        .Distinct()
+        .ToList();
+
+    var chordDefs = chordNames
+        .Select(n => new ChordDefinition { Name = n, Frets = string.Empty, IsBarre = false })
+        .ToList();
+    var chords = await _chordResolver.ResolveChordsAsync(chordDefs, tuning, difficulty, ct);
+
+    var version = new SongVersion
+    {
+        SongId = song.Id,
+        TabData = req.TabData.Length > 10000 ? req.TabData[..10000] : req.TabData,
+        Tuning = tuning,
+        CapoPos = capoPos,
+        Difficulty = difficulty,
+        StrumPattern = strumPattern,
+        NotationType = NotationType.ChordsOverLyrics,
+        IsDefault = false,
+        IsUserSubmission = true,
+        ContributorUserId = userId,
+        ContributorName = contributorName,
+        SourceName = "User submission",
+        DateScraped = DateTime.UtcNow,
+        Chords = chords
+    };
+
+    _db.SongVersions.Add(version);
+    await _db.SaveChangesAsync(ct);
+
+    return Ok(new UserSubmission.UserSubmissionDto
+    {
+        Id = version.Id,
+        TabData = version.TabData ?? string.Empty,
+        Tuning = version.Tuning.ToString(),
+        CapoPos = version.CapoPos.ToString(),
+        Difficulty = version.Difficulty.ToString(),
+        StrumPattern = version.StrumPattern.ToString(),
+        Rating = version.Rating,
+        RatingCount = version.RatingCount,
+        ContributorName = contributorName,
+        DateScraped = version.DateScraped
+    });
+}
+private string? GetUserId() =>
+    User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.Identity?.Name;
+
+
+
     }
 }

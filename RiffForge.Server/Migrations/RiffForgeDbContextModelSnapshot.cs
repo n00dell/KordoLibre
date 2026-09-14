@@ -536,6 +536,9 @@ namespace RiffForge.Server.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("ContributorUserId")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("DateScraped")
                         .HasColumnType("timestamp with time zone");
 
@@ -543,6 +546,9 @@ namespace RiffForge.Server.Migrations
                         .HasColumnType("integer");
 
                     b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsUserSubmission")
                         .HasColumnType("boolean");
 
                     b.Property<int>("NotationType")

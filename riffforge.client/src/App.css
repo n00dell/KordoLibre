@@ -2087,3 +2087,123 @@ a {
     font-size: 13px;
     margin-top: 4px;
 }
+.user-submissions-section {
+    margin-top: 2.5rem;
+    max-width: 800px;
+}
+
+.user-submissions-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1rem;
+}
+
+.user-submissions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.user-submission-card {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1rem 1.25rem;
+}
+
+.user-submission-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.4rem;
+}
+
+.user-submission-rating {
+    color: var(--accent);
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+.user-submission-contributor {
+    font-weight: 600;
+    margin-bottom: 0.3rem;
+}
+
+.user-submission-meta {
+    display: flex;
+    gap: 0.5rem;
+    color: var(--text-muted);
+    font-size: 0.8rem;
+}
+
+.chord-submission-editor {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+}
+
+.chord-submission-textarea {
+    width: 100%;
+    min-height: 140px;
+    padding: 0.75rem;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.03);
+    color: var(--text-primary);
+    font-family: 'Courier New', monospace;
+    resize: vertical;
+    margin-bottom: 0.75rem;
+}
+
+.chord-submission-warning {
+    color: #ffeaa7;
+    font-size: 0.85rem;
+    margin-bottom: 0.75rem;
+}
+
+.chord-submission-fields {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.chord-submission-fields label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.chord-submission-fields select {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--border-color);
+    background: rgba(255,255,255,0.05);
+    color: var(--text-primary);
+}
+
+.chord-submission-preview {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.chord-submission-preview h3 {
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 0.75rem;
+}
+
+.chord-submission-actions {
+    display: flex;
+    gap: 10px;
+}
