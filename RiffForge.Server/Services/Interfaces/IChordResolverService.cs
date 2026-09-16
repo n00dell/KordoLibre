@@ -8,7 +8,8 @@ namespace RiffForge.Server.Services.Interfaces
     {
         string Normalize(string input) =>
             string.IsNullOrWhiteSpace(input) ? string.Empty : input.Trim().ToLowerInvariant();
-        Task<List<Chord>> ResolveChordsAsync(
-           List<ChordDefinition> defs, Tuning tuning, Difficulty difficulty, CancellationToken ct);
+
+        Task<List<ChordShape>> ResolveChordShapesAsync(
+            List<ChordDefinition> defs, Tuning tuning, Difficulty difficulty, CancellationToken ct);
     }
 }

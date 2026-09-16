@@ -10,11 +10,16 @@ export interface UserSubmission {
     contributorName: string;
     dateScraped: string;
 }
-
+export interface ChordShapeOverride {
+    name: string;
+    fretPositions: string;
+    isBarreChord: boolean;
+}
 export interface SubmitVersionRequest {
     tabData: string;
     tuning: string;
     capoPos: string;
     difficulty: string;
     strumPattern: string;
+    chordShapes?: ChordShapeOverride[];
 }

@@ -11,7 +11,7 @@
 // itself ("[G]some words") is what matters for this demo — swap the words.
 
 import type { Song } from "../types/models";
-import { Difficulty, Tuning, CapoPos, StrumPattern, InstrumentType, ChordQuality, TechniqueCategory } from "../types/enums";
+import { Difficulty, Tuning, CapoPos, InstrumentType, ChordQuality, TechniqueCategory } from "../types/enums";
 
 const strummingTechnique = { id: 1, name: "Strumming", description: "Steady down-up pattern", difficulty: Difficulty.Beginner, category: TechniqueCategory.Rhythm };
 const fingerpickingTechnique = { id: 2, name: "Fingerpicking", description: "Travis-style picking pattern", difficulty: Difficulty.Advanced, category: TechniqueCategory.Picking };
@@ -36,7 +36,7 @@ export const sampleSongs: Song[] = [
                     "[Dsus4]Swap this text for [A7sus4]licensed lyric data\n\n" +
                     "[Em7]Second verse placeholder [G]text goes here\n" +
                     "[Dsus4]Just standing in for [A7sus4]the real thing",
-                strumPattern: StrumPattern.DownDownUpUpDownUp,
+                strumPattern: "D-D-D-U",
                 tuning: Tuning.Standard,
                 capoPos: CapoPos.Fret2,
                 difficulty: Difficulty.Beginner,
@@ -58,7 +58,7 @@ export const sampleSongs: Song[] = [
                 tabData:
                     "[Em]Slower fingerstyle take, [G]placeholder words\n" +
                     "[D]No capo this [A]time around",
-                strumPattern: StrumPattern.Fingerpicked,
+                strumPattern: "D-D-Du",
                 tuning: Tuning.Standard,
                 capoPos: CapoPos.None,
                 difficulty: Difficulty.Intermediate,
@@ -93,7 +93,7 @@ export const sampleSongs: Song[] = [
                     "[D]Standing in for [F]the real lyric\n\n" +
                     "[Am]Another placeholder [C]line for verse two\n" +
                     "[D]Not the actual [F]song words",
-                strumPattern: StrumPattern.Fingerpicked,
+                strumPattern: "D-D-D-U",
                 tuning: Tuning.Standard,
                 capoPos: CapoPos.None,
                 difficulty: Difficulty.Advanced,
@@ -110,7 +110,7 @@ export const sampleSongs: Song[] = [
                 id: 202,
                 songId: 2,
                 tabData: "[Am]Simplified beginner [C]placeholder version\n[D]Chords only, [F]no fingerpicking",
-                strumPattern: StrumPattern.DownUpDownUp,
+                strumPattern: "D-D-D-U",
                 tuning: Tuning.Standard,
                 capoPos: CapoPos.None,
                 difficulty: Difficulty.Beginner,
@@ -127,7 +127,7 @@ export const sampleSongs: Song[] = [
                 id: 203,
                 songId: 2,
                 tabData: "[Am]Drop D placeholder [C]experimental take\n[D]For demo [F]purposes",
-                strumPattern: StrumPattern.Custom,
+                strumPattern: "D-D-D-U",
                 tuning: Tuning.DropD,
                 capoPos: CapoPos.None,
                 difficulty: Difficulty.Expert,
@@ -156,7 +156,7 @@ export const sampleSongs: Song[] = [
                 id: 301,
                 songId: 3,
                 tabData: "[E]Placeholder rock and roll [A]opening line\n[B7]Just demo text, [E]not the real song",
-                strumPattern: StrumPattern.Custom,
+                strumPattern: "D-D-D-U",
                 tuning: Tuning.Standard,
                 capoPos: CapoPos.None,
                 difficulty: Difficulty.Intermediate,
@@ -185,7 +185,7 @@ export const sampleSongs: Song[] = [
                 id: 401,
                 songId: 4,
                 tabData: "[G]Placeholder folk-style [Am7]opening line\n[G/B]Demo text standing in, [C]not the real lyric",
-                strumPattern: StrumPattern.Fingerpicked,
+                strumPattern: "D-D-D-U",
                 tuning: Tuning.Standard,
                 capoPos: CapoPos.None,
                 difficulty: Difficulty.Advanced,

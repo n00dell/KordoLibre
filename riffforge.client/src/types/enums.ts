@@ -44,13 +44,6 @@ export const CapoPos = {
 } as const;
 export type CapoPos = (typeof CapoPos)[keyof typeof CapoPos];
 
-export const StrumPattern = {
-    DownDownUpUpDownUp: "DownDownUpUpDownUp",
-    DownUpDownUp: "DownUpDownUp",
-    Fingerpicked: "Fingerpicked",
-    Custom: "Custom",
-} as const;
-export type StrumPattern = (typeof StrumPattern)[keyof typeof StrumPattern];
 
 export const InstrumentType = {
     AcousticGuitar: "AcousticGuitar",

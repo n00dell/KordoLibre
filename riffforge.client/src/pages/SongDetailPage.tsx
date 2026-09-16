@@ -16,6 +16,8 @@ import ChordSubmissionEditor from "../components/ChordSubmissionEditor";
 import { fetchUserSubmissions } from "../api/submissions";
 import type { UserSubmission } from "../types/submissions";
 import { fetchLibraryStatus, addToLibrary, removeFromLibrary } from "../api/library";
+import { extractChordSequence, isChordOnlyLine } from "../utils/chordLyrics";
+import ChordSequenceLine from "../components/ChordSequenceLine";
 
 
 // Helper to detect if the content looks like tablature
@@ -41,6 +43,10 @@ function SongDetailPage() {
     const [inLibrary, setInLibrary] = useState(false);
     const [libraryBusy, setLibraryBusy] = useState(false);
     const [generatingNotation, setGeneratingNotation] = useState(false);
+    function extractChordSequence(line: string): string[] {
+        const matches = line.match(/\[([^\]]+)\]/g) || [];
+        return matches.map((m) => m.slice(1, -1));
+    }
 
 // Also create a helper to get the full chord info
     const [userSubmissions, setUserSubmissions] = useState<UserSubmission[]>([]);
@@ -312,9 +318,13 @@ function SongDetailPage() {
                     {isTab ? (
                         <TabBlock tabData={rawSheet} structuredTab={structuredTab}/>
                     ) : (
-                        lines.map((line, index) => (
-                            <ChordLyricLine key={index} line={line} chordFrets={chordFretMap} />
-                        ))
+                        lines.map((line, index) =>
+                            isChordOnlyLine(line) ? (
+                                <ChordSequenceLine key={index} chords={extractChordSequence(line)} chordFrets={chordFretMap} />
+                            ) : (
+                                <ChordLyricLine key={index} line={line} chordFrets={chordFretMap} />
+                            )
+                        )
                     )}
                 </div>
             </section>

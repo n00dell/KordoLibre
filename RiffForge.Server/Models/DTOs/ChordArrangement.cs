@@ -17,7 +17,7 @@ namespace RiffForge.Server.Models.DTOs
         [JsonPropertyName("tabData")]
         public string TabData { get; set; } = string.Empty;
         [JsonPropertyName("strumPattern")]
-        public StrumPattern StrumPattern { get; set; }
+        public string StrumPattern { get; set; } = string.Empty;
         [JsonPropertyName("tuning")]
         public Tuning Tuning { get; set; }
         [JsonPropertyName("capoPos")]

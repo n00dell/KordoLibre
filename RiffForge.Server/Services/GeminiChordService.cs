@@ -99,7 +99,9 @@ Requirements:
    - Difficulty: Beginner=0, Easy=1, Intermediate=2, Advanced=3, Expert=4
    - CapoPos: None=0, 1st=1, 2nd=2, 3rd=3, 4th=4, 5th=5, 6th=6, 7th=7...
    - Tuning: Standard=0, DropD=1, HalfStepDown=2...
-   - StrumPattern: DownDownUp=0...
+   - 'strumPattern': an 8-character string, one char per 8th note across 4 beats,
+     using 'D' (downstroke), 'U' (upstroke), or '-' (rest). E.g. ""D-D-D-D-"" for
+     straight downstrokes, ""DUDUDUDU"" for alternating down/up.
 6. For each chord in 'chordDefinitions', set 'isBarre' to true only if the voicing
    requires one finger to fret multiple strings at the same fret (a true barre
    shape), not just because the chord starts above fret 0.

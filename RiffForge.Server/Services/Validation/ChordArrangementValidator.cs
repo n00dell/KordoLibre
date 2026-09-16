@@ -33,11 +33,12 @@ namespace RiffForge.Server.Services.Validation
             if (!Enum.IsDefined(typeof(NotationType), arrangement.NotationType) ||
                 !Enum.IsDefined(typeof(Difficulty), arrangement.Difficulty) ||
                 !Enum.IsDefined(typeof(Tuning), arrangement.Tuning) ||
-                !Enum.IsDefined(typeof(CapoPos), arrangement.CapoPos) ||
-                !Enum.IsDefined(typeof(StrumPattern), arrangement.StrumPattern))
+                !Enum.IsDefined(typeof(CapoPos), arrangement.CapoPos))
             {
                 throw new AiOutputValidationException(providerKey, "Provider returned an out-of-range enum value.");
             }
+
+            arrangement.StrumPattern = NormalizeStrumPattern(arrangement.StrumPattern);
 
             // Shape must match the declared notation type, or the frontend renders
             // garbage: TabBlock.tsx expects e|B|G|D|A|E lines, ChordLyricLine.tsx
@@ -78,6 +79,15 @@ namespace RiffForge.Server.Services.Validation
             if (clean.Length > 6) return clean[..6];
             if (clean.Length < 6) return clean.PadRight(6, 'x');
             return clean;
+        }
+        private static readonly System.Text.RegularExpressions.Regex StrumPatternRegex =
+            new(@"^[DU-]{1,16}$", System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+        public static string NormalizeStrumPattern(string? pattern)
+        {
+            var clean = (pattern ?? string.Empty).Trim().ToUpperInvariant();
+            if (!StrumPatternRegex.IsMatch(clean)) return "D-D-D-D-";
+            return clean.PadRight(8, '-')[..8];
         }
     }
 }

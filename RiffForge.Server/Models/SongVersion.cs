@@ -3,6 +3,7 @@ using RiffForge.Server.Models.Enums;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
+using RiffForge.Server.Models.DTOs;
 
 namespace RiffForge.Server.Models
 {
@@ -23,7 +24,8 @@ namespace RiffForge.Server.Models
         [Column(TypeName = "jsonb")]
         public string? StructuredTabJson { get; set; }
 
-        public StrumPattern StrumPattern { get; set; }
+        [MaxLength(16)]
+        public string StrumPattern { get; set; } = "D-D-D-D-";
         public Tuning Tuning { get; set; }
         public CapoPos CapoPos { get; set; }
         public Difficulty Difficulty { get; set; }
@@ -51,7 +53,28 @@ namespace RiffForge.Server.Models
         public NotationType NotationType { get; set; }
         public DateTime DateScraped { get; set; } = DateTime.UtcNow;
 
-        public ICollection<Chord> Chords { get; set; } = new List<Chord>();
+        [JsonIgnore]
+        public ICollection<SongVersionChordShape> ChordShapes { get; set; } = new List<SongVersionChordShape>();
+
+        // Flattened Chord + ChordShape view, same shape the frontend already
+        // expects (fretPositions/isBarreChord sitting directly on the chord).
+        [NotMapped]
+        public List<ResolvedChordDto> Chords => ChordShapes
+            .OrderBy(cs => cs.SortOrder)
+            .Select(cs => new ResolvedChordDto
+            {
+                Id = cs.ChordShape.ChordId,
+                ShapeId = cs.ChordShape.Id,
+                Name = cs.ChordShape.Chord.Name,
+                Root = cs.ChordShape.Chord.Root,
+                Quality = cs.ChordShape.Chord.Quality,
+                Tuning = cs.ChordShape.Chord.Tuning,
+                Difficulty = cs.ChordShape.Difficulty,
+                FretPositions = cs.ChordShape.FretPositions,
+                IsBarreChord = cs.ChordShape.IsBarreChord,
+                FingeringPattern = cs.ChordShape.FingeringPattern,
+            })
+            .ToList();
         public ICollection<Technique> Techniques { get; set; } = new List<Technique>();
     }
 }

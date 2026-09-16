@@ -7,7 +7,7 @@
 //    since your API will likely return them nested (or you'll fetch them
 //    separately later — either way, the shape is useful to have typed now).
 
-import type { Difficulty, Tuning, CapoPos, StrumPattern, InstrumentType, ChordQuality, TechniqueCategory, NotationType } from "./enums";
+import type { Difficulty, Tuning, CapoPos, InstrumentType, ChordQuality, TechniqueCategory, NotationType } from "./enums";
 
 export type AiProviderPreference = "Auto" | "Gemini" | "Claude";
 
@@ -50,7 +50,7 @@ export interface SongVersion {
     id: number;
     songId: number;
     tabData?: string;
-    strumPattern: StrumPattern;
+    strumPattern: string;
     tuning: Tuning;
     capoPos: CapoPos;
     difficulty: Difficulty;

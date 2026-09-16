@@ -6,6 +6,7 @@ using RiffForge.Server.Data;
 using RiffForge.Server.Models;
 using RiffForge.Server.Models.DTOs;
 using RiffForge.Server.Models.Enums;
+using RiffForge.Server.Services;
 using RiffForge.Server.Services.Exceptions;
 using RiffForge.Server.Services.Interfaces;
 
@@ -33,9 +34,9 @@ namespace RiffForge.Server.Controllers
         public async Task<ActionResult<Song>> GetSong(int id, CancellationToken ct)
         {
             var song = await _db.Songs
-    .Include(s => s.PrimaryArtist)
-    .Include(s => s.Versions).ThenInclude(v => v.Chords)
-    .FirstOrDefaultAsync(s => s.Id == id, ct);
+                .Include(s => s.PrimaryArtist)
+                .Include(s => s.Versions).ThenInclude(v => v.ChordShapes).ThenInclude(cs => cs.ChordShape).ThenInclude(cs => cs.Chord)
+                .FirstOrDefaultAsync(s => s.Id == id, ct);
 
             if (song == null) return NotFound();
 
@@ -119,10 +120,10 @@ namespace RiffForge.Server.Controllers
     : null
             };
 
-            originalVer.Chords = await _chordResolver.ResolveChordsAsync(
-    generated.OriginalVersion.ChordDefinitions, originalVer.Tuning, originalVer.Difficulty, ct);
-            altVer.Chords = await _chordResolver.ResolveChordsAsync(
-                generated.AlternateVersion.ChordDefinitions, altVer.Tuning, altVer.Difficulty, ct);
+            originalVer.ChordShapes = ChordResolverService.ToVersionLinks(
+                await _chordResolver.ResolveChordShapesAsync(generated.OriginalVersion.ChordDefinitions, originalVer.Tuning, originalVer.Difficulty, ct));
+            altVer.ChordShapes = ChordResolverService.ToVersionLinks(
+                await _chordResolver.ResolveChordShapesAsync(generated.AlternateVersion.ChordDefinitions, altVer.Tuning, altVer.Difficulty, ct));
             _db.SongVersions.Add(originalVer);
             _db.SongVersions.Add(altVer);
 

@@ -28,7 +28,9 @@ export function parseChordLine(line: string): ChordToken[] {
     for (const part of parts) {
         const match = part.match(/^\[([^\]]+)\]$/);
         if (match) {
-            // Found a chord marker. Hang onto it until we see the text that follows.
+            // A new chord arrived before the previous one got any text —
+            // push it now (empty text) instead of overwriting and losing it.
+            if (pendingChord !== null) tokens.push({ chord: pendingChord, text: "" });
             pendingChord = match[1];
         } else {
             tokens.push({ chord: pendingChord, text: part });
@@ -45,4 +47,12 @@ export function parseChordLine(line: string): ChordToken[] {
 
 export function parseChordSheet(sheet: string): ChordToken[][] {
     return sheet.split("\n").map(parseChordLine);
+}
+export function isChordOnlyLine(line: string): boolean {
+    return line.includes("[") && line.replace(/\[[^\]]+\]/g, "").trim() === "";
+}
+
+export function extractChordSequence(line: string): string[] {
+    const matches = line.match(/\[([^\]]+)\]/g) || [];
+    return matches.map((m) => m.slice(1, -1));
 }

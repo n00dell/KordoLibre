@@ -7,8 +7,11 @@ public class UserSubmission
         string Tuning,
         string CapoPos,
         string Difficulty,
-        string StrumPattern
+        string StrumPattern,
+        List<ChordShapeOverride>? ChordShapes = null
     );
+
+    public record ChordShapeOverride(string Name, string FretPositions, bool IsBarreChord);
 
     public class UserSubmissionDto
     {

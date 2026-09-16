@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using RiffForge.Server.Data;
@@ -11,9 +12,11 @@ using RiffForge.Server.Data;
 namespace RiffForge.Server.Migrations
 {
     [DbContext(typeof(RiffForgeDbContext))]
-    partial class RiffForgeDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260914120930_Usrcontr")]
+    partial class Usrcontr
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -36,6 +39,21 @@ namespace RiffForge.Server.Migrations
                     b.HasIndex("SongsId");
 
                     b.ToTable("ArtistSong");
+                });
+
+            modelBuilder.Entity("ChordSongVersion", b =>
+                {
+                    b.Property<int>("ChordsId")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("SongVersionsId")
+                        .HasColumnType("integer");
+
+                    b.HasKey("ChordsId", "SongVersionsId");
+
+                    b.HasIndex("SongVersionsId");
+
+                    b.ToTable("ChordSongVersion");
                 });
 
             modelBuilder.Entity("GenreSong", b =>
@@ -317,8 +335,25 @@ namespace RiffForge.Server.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
-                    b.Property<int?>("DefaultShapeId")
+                    b.Property<string>("DiagramJson")
+                        .HasColumnType("jsonb");
+
+                    b.Property<int>("Difficulty")
                         .HasColumnType("integer");
+
+                    b.Property<string>("FingeringPattern")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<string>("FretPositions")
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
+
+                    b.Property<bool>("IsBarreChord")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("LastScraped")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -338,63 +373,23 @@ namespace RiffForge.Server.Migrations
                         .HasMaxLength(5)
                         .HasColumnType("character varying(5)");
 
+                    b.Property<string>("SourceName")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("SourceUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<int>("Tuning")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DefaultShapeId");
-
                     b.HasIndex("NormalizedName")
                         .IsUnique();
 
                     b.ToTable("Chords");
-                });
-
-            modelBuilder.Entity("RiffForge.Server.Models.ChordShape", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ChordId")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("ContributorName")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.Property<string>("ContributorUserId")
-                        .HasColumnType("text");
-
-                    b.Property<DateTime>("DateAdded")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<int>("Difficulty")
-                        .HasColumnType("integer");
-
-                    b.Property<string>("FingeringPattern")
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<string>("FretPositions")
-                        .IsRequired()
-                        .HasMaxLength(20)
-                        .HasColumnType("character varying(20)");
-
-                    b.Property<bool>("IsBarreChord")
-                        .HasColumnType("boolean");
-
-                    b.Property<int>("UpvoteCount")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChordId");
-
-                    b.ToTable("ChordShapes");
                 });
 
             modelBuilder.Entity("RiffForge.Server.Models.Genre", b =>
@@ -540,9 +535,6 @@ namespace RiffForge.Server.Migrations
                     b.Property<int>("CapoPos")
                         .HasColumnType("integer");
 
-                    b.Property<int?>("ChordId")
-                        .HasColumnType("integer");
-
                     b.Property<string>("ContributorName")
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
@@ -586,10 +578,8 @@ namespace RiffForge.Server.Migrations
                     b.Property<string>("StructuredTabJson")
                         .HasColumnType("jsonb");
 
-                    b.Property<string>("StrumPattern")
-                        .IsRequired()
-                        .HasMaxLength(16)
-                        .HasColumnType("character varying(16)");
+                    b.Property<int>("StrumPattern")
+                        .HasColumnType("integer");
 
                     b.Property<string>("TabData")
                         .HasMaxLength(10000)
@@ -600,8 +590,6 @@ namespace RiffForge.Server.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("ChordId");
-
                     b.HasIndex("SongId");
 
                     b.HasIndex("SongId", "IsDefault")
@@ -609,32 +597,6 @@ namespace RiffForge.Server.Migrations
                         .HasFilter("\"IsDefault\" = true");
 
                     b.ToTable("SongVersions");
-                });
-
-            modelBuilder.Entity("RiffForge.Server.Models.SongVersionChordShape", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<int>("ChordShapeId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SongVersionId")
-                        .HasColumnType("integer");
-
-                    b.Property<int>("SortOrder")
-                        .HasColumnType("integer");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ChordShapeId");
-
-                    b.HasIndex("SongVersionId");
-
-                    b.ToTable("SongVersionChordShapes");
                 });
 
             modelBuilder.Entity("RiffForge.Server.Models.Technique", b =>
@@ -840,6 +802,21 @@ namespace RiffForge.Server.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ChordSongVersion", b =>
+                {
+                    b.HasOne("RiffForge.Server.Models.Chord", null)
+                        .WithMany()
+                        .HasForeignKey("ChordsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("RiffForge.Server.Models.SongVersion", null)
+                        .WithMany()
+                        .HasForeignKey("SongVersionsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("GenreSong", b =>
                 {
                     b.HasOne("RiffForge.Server.Models.Genre", null)
@@ -921,27 +898,6 @@ namespace RiffForge.Server.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("RiffForge.Server.Models.Chord", b =>
-                {
-                    b.HasOne("RiffForge.Server.Models.ChordShape", "DefaultShape")
-                        .WithMany()
-                        .HasForeignKey("DefaultShapeId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
-                    b.Navigation("DefaultShape");
-                });
-
-            modelBuilder.Entity("RiffForge.Server.Models.ChordShape", b =>
-                {
-                    b.HasOne("RiffForge.Server.Models.Chord", "Chord")
-                        .WithMany("Shapes")
-                        .HasForeignKey("ChordId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Chord");
-                });
-
             modelBuilder.Entity("RiffForge.Server.Models.ScrapeRequest", b =>
                 {
                     b.HasOne("RiffForge.Server.Models.Song", "ResultSong")
@@ -969,10 +925,6 @@ namespace RiffForge.Server.Migrations
 
             modelBuilder.Entity("RiffForge.Server.Models.SongVersion", b =>
                 {
-                    b.HasOne("RiffForge.Server.Models.Chord", null)
-                        .WithMany("SongVersions")
-                        .HasForeignKey("ChordId");
-
                     b.HasOne("RiffForge.Server.Models.Song", "Song")
                         .WithMany("Versions")
                         .HasForeignKey("SongId")
@@ -980,25 +932,6 @@ namespace RiffForge.Server.Migrations
                         .IsRequired();
 
                     b.Navigation("Song");
-                });
-
-            modelBuilder.Entity("RiffForge.Server.Models.SongVersionChordShape", b =>
-                {
-                    b.HasOne("RiffForge.Server.Models.ChordShape", "ChordShape")
-                        .WithMany()
-                        .HasForeignKey("ChordShapeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("RiffForge.Server.Models.SongVersion", "SongVersion")
-                        .WithMany("ChordShapes")
-                        .HasForeignKey("SongVersionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ChordShape");
-
-                    b.Navigation("SongVersion");
                 });
 
             modelBuilder.Entity("RiffForge.Server.Models.UserSongProgress", b =>
@@ -1042,21 +975,9 @@ namespace RiffForge.Server.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("RiffForge.Server.Models.Chord", b =>
-                {
-                    b.Navigation("Shapes");
-
-                    b.Navigation("SongVersions");
-                });
-
             modelBuilder.Entity("RiffForge.Server.Models.Song", b =>
                 {
                     b.Navigation("Versions");
-                });
-
-            modelBuilder.Entity("RiffForge.Server.Models.SongVersion", b =>
-                {
-                    b.Navigation("ChordShapes");
                 });
 
             modelBuilder.Entity("RiffForge.Server.Models.UserProfile", b =>

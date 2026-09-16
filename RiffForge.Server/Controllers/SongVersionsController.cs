@@ -7,8 +7,10 @@ using RiffForge.Server.Data;
 using RiffForge.Server.Models;
 using RiffForge.Server.Models.DTOs;
 using RiffForge.Server.Models.Enums;
+using RiffForge.Server.Services;
 using RiffForge.Server.Services.Exceptions;
 using RiffForge.Server.Services.Interfaces;
+using RiffForge.Server.Services.Validation;
 
 namespace RiffForge.Server.Controllers
 {
@@ -81,7 +83,8 @@ namespace RiffForge.Server.Controllers
                     ? "Gemini AI (Tab, on-demand)"
                     : "Gemini AI (Chords, on-demand)",
                 DateScraped = DateTime.UtcNow,
-                Chords = await _chordResolver.ResolveChordsAsync(arrangement.ChordDefinitions, arrangement.Tuning, arrangement.Difficulty, ct),
+                ChordShapes = ChordResolverService.ToVersionLinks(
+                    await _chordResolver.ResolveChordShapesAsync(arrangement.ChordDefinitions, arrangement.Tuning, arrangement.Difficulty, ct)),
                 StructuredTabJson = arrangement.StructuredTab != null
     ? System.Text.Json.JsonSerializer.Serialize(arrangement.StructuredTab)
     : null,
@@ -150,8 +153,7 @@ public async Task<ActionResult<UserSubmission.UserSubmissionDto>> Submit(int son
         return BadRequest($"Invalid capo position: {req.CapoPos}");
     if (!Enum.TryParse<Difficulty>(req.Difficulty, true, out var difficulty))
         return BadRequest($"Invalid difficulty: {req.Difficulty}");
-    if (!Enum.TryParse<StrumPattern>(req.StrumPattern, true, out var strumPattern))
-        return BadRequest($"Invalid strum pattern: {req.StrumPattern}");
+    var strumPattern = ChordArrangementValidator.NormalizeStrumPattern(req.StrumPattern);
 
     var userId = GetUserId();
     if (userId is null) return Unauthorized();
@@ -171,10 +173,15 @@ public async Task<ActionResult<UserSubmission.UserSubmissionDto>> Submit(int son
         .Distinct()
         .ToList();
 
-    var chordDefs = chordNames
-        .Select(n => new ChordDefinition { Name = n, Frets = string.Empty, IsBarre = false })
+    if (req.ChordShapes.Any(cs => string.IsNullOrWhiteSpace(cs.Name) || string.IsNullOrWhiteSpace(cs.FretPositions)))
+        return BadRequest("Each chord shape needs a name and fret positions.");
+
+    var chordDefs = req.ChordShapes
+        .GroupBy(cs => cs.Name, StringComparer.OrdinalIgnoreCase)
+        .Select(g => g.First()) // dedupe same chord name sent twice
+        .Select(cs => new ChordDefinition { Name = cs.Name, Frets = cs.FretPositions, IsBarre = cs.IsBarreChord })
         .ToList();
-    var chords = await _chordResolver.ResolveChordsAsync(chordDefs, tuning, difficulty, ct);
+    var shapes = await _chordResolver.ResolveChordShapesAsync(chordDefs, tuning, difficulty, ct);
 
     var version = new SongVersion
     {
@@ -191,7 +198,7 @@ public async Task<ActionResult<UserSubmission.UserSubmissionDto>> Submit(int son
         ContributorName = contributorName,
         SourceName = "User submission",
         DateScraped = DateTime.UtcNow,
-        Chords = chords
+        ChordShapes = ChordResolverService.ToVersionLinks(shapes),
     };
 
     _db.SongVersions.Add(version);

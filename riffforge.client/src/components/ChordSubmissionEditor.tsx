@@ -3,7 +3,12 @@ import ChordLyricLine from "./ChordLyricLine";
 import { extractChordNames, lookupChordInfo, isKnownChord } from "../utils/chordLookup";
 import { submitVersion } from "../api/submissions";
 import type { UserSubmission } from "../types/submissions";
-import { Tuning, CapoPos, Difficulty, StrumPattern } from "../types/enums";
+import { Tuning, CapoPos, Difficulty } from "../types/enums";
+import StrumPatternEditor from "./StrumPatternEditor";
+import { DEFAULT_STRUM_PATTERN } from "../types/strumPresets";
+import ChordVariationPicker from "./ChordVariationPicker";
+import { extractChordSequence, isChordOnlyLine } from "../utils/chordLyrics";
+import ChordSequenceLine from "./ChordSequenceLine";
 
 interface Props {
     songId: number;
@@ -16,19 +21,26 @@ export default function ChordSubmissionEditor({ songId, onSubmitted, onCancel }:
     const [tuning, setTuning] = useState<string>(Tuning.Standard);
     const [capoPos, setCapoPos] = useState<string>(CapoPos.None);
     const [difficulty, setDifficulty] = useState<string>(Difficulty.Intermediate);
-    const [strumPattern, setStrumPattern] = useState<string>(StrumPattern.DownDownUpUpDownUp);
+    const [strumPattern, setStrumPattern] = useState<string>(DEFAULT_STRUM_PATTERN);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [chordOverrides, setChordOverrides] = useState<Record<string, { fretPositions: string; isBarreChord: boolean }>>({});
+    const [pickingChord, setPickingChord] = useState<string | null>(null);
 
     const chordNames = useMemo(() => extractChordNames(text), [text]);
     const chordFretMap = useMemo(() => {
         const map: Record<string, { fretPositions: string; isBarreChord?: boolean }> = {};
         chordNames.forEach((name) => {
+            const override = chordOverrides[name];
+            if (override) {
+                map[name] = override;
+                return;
+            }
             const info = lookupChordInfo(name);
             map[name] = { fretPositions: info.frets, isBarreChord: info.isBarreChord };
         });
         return map;
-    }, [chordNames]);
+    }, [chordNames, chordOverrides]);
     const unknownChords = chordNames.filter((n) => !isKnownChord(n));
 
     async function handleSubmit() {
@@ -39,7 +51,12 @@ export default function ChordSubmissionEditor({ songId, onSubmitted, onCancel }:
         }
         setSubmitting(true);
         try {
-            const result = await submitVersion(songId, { tabData: text, tuning, capoPos, difficulty, strumPattern });
+            const chordShapes = chordNames.map((name) => ({
+                name,
+                fretPositions: chordFretMap[name]?.fretPositions ?? "",
+                isBarreChord: chordFretMap[name]?.isBarreChord ?? false,
+            }));
+            const result = await submitVersion(songId, { tabData: text, tuning, capoPos, difficulty, strumPattern, chordShapes });
             onSubmitted?.(result);
             setText("");
         } catch (err) {
@@ -69,7 +86,36 @@ export default function ChordSubmissionEditor({ songId, onSubmitted, onCancel }:
                     Not sure about the shape for: {unknownChords.join(", ")} — showing a best-guess fingering below.
                 </p>
             )}
-
+            {chordNames.length > 0 && (
+                <div className="chord-variation-controls" style={{ marginBottom: 12 }}>
+                    <p className="rf-block-sub" style={{ marginBottom: 6 }}>
+                        Not the shape you meant? Pick a variation for any chord below.
+                    </p>
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+                        {chordNames.map((name) => (
+                            <button
+                                key={name}
+                                type="button"
+                                className="chip chip-outline"
+                                onClick={() => setPickingChord(pickingChord === name ? null : name)}
+                            >
+                                {name} ✎
+                            </button>
+                        ))}
+                    </div>
+                    {pickingChord && (
+                        <div style={{ marginTop: 10 }}>
+                            <ChordVariationPicker
+                                chordName={pickingChord}
+                                onSelect={(shape) => {
+                                    setChordOverrides((prev) => ({ ...prev, [pickingChord]: shape }));
+                                    setPickingChord(null);
+                                }}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
             <div className="chord-submission-fields">
                 <label>
                     <span>Tuning</span>
@@ -89,20 +135,22 @@ export default function ChordSubmissionEditor({ songId, onSubmitted, onCancel }:
                         {Object.values(Difficulty).map((d) => <option key={d} value={d}>{d}</option>)}
                     </select>
                 </label>
-                <label>
+                <label style={{ gridColumn: "1 / -1" }}>
                     <span>Strum pattern</span>
-                    <select value={strumPattern} onChange={(e) => setStrumPattern(e.target.value)}>
-                        {Object.values(StrumPattern).map((s) => <option key={s} value={s}>{s}</option>)}
-                    </select>
+                    <StrumPatternEditor value={strumPattern} onChange={setStrumPattern} />
                 </label>
             </div>
 
             {text.trim() && (
                 <div className="chord-submission-preview">
                     <h3>Preview</h3>
-                    {text.split("\n").map((line, i) => (
-                        <ChordLyricLine key={i} line={line} chordFrets={chordFretMap} />
-                    ))}
+                    {text.split("\n").map((line, i) =>
+                        isChordOnlyLine(line) ? (
+                            <ChordSequenceLine key={i} chords={extractChordSequence(line)} chordFrets={chordFretMap} />
+                        ) : (
+                            <ChordLyricLine key={i} line={line} chordFrets={chordFretMap} />
+                        )
+                    )}
                 </div>
             )}
 

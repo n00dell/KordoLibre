@@ -20,7 +20,9 @@ namespace RiffForge.Server.Data
         public DbSet<UserProfile> UserProfiles { get; set; }
         public DbSet<UserSongProgress> UserSongProgresses { get; set; }
         public DbSet<ScrapeRequest> ScrapeRequests { get; set; }
-
+        public DbSet<ChordShape> ChordShapes { get; set; }
+        
+        public DbSet<SongVersionChordShape> SongVersionChordShapes { get; set; }
         public DbSet<SongVersion> SongVersions { get; set; }
         public DbSet<UserAiProviderKey> UserAiProviderKeys { get; set; }
 
@@ -53,11 +55,22 @@ namespace RiffForge.Server.Data
                 .WithMany(s => s.Versions)
                 .HasForeignKey(sv => sv.SongId)
                 .OnDelete(DeleteBehavior.Cascade); // delete song, its versions go too
+            modelBuilder.Entity<Chord>()
+                .HasMany(c => c.Shapes)
+                .WithOne(s => s.Chord)
+                .HasForeignKey(s => s.ChordId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-            // SongVersion <-> Chords
-            modelBuilder.Entity<SongVersion>()
-                .HasMany(sv => sv.Chords)
-                .WithMany(c => c.SongVersions);
+            // Chord -> DefaultShape is a separate, independent FK pointing at one
+            // specific ChordShape row. Restrict delete so SQL Server doesn't reject
+            // this as a second cascade path onto the same table (multiple cascade
+            // paths from Chord -> ChordShape would otherwise throw at migration time).
+            modelBuilder.Entity<Chord>()
+                .HasOne(c => c.DefaultShape)
+                .WithMany()
+                .HasForeignKey(c => c.DefaultShapeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
 
             // SongVersion <-> Techniques
             modelBuilder.Entity<SongVersion>()

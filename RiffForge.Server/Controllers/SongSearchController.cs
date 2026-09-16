@@ -282,10 +282,10 @@ namespace RiffForge.Server.Controllers
     ? System.Text.Json.JsonSerializer.Serialize(generatedChords.AlternateVersion.StructuredTab)
     : null,
                 };
-                originalVer.Chords = await _chordResolver.ResolveChordsAsync(
-    generatedChords.OriginalVersion.ChordDefinitions, originalVer.Tuning, originalVer.Difficulty, ct);
-                altVer.Chords = await _chordResolver.ResolveChordsAsync(
-                    generatedChords.AlternateVersion.ChordDefinitions, altVer.Tuning, altVer.Difficulty, ct);
+                originalVer.ChordShapes = ChordResolverService.ToVersionLinks(
+                    await _chordResolver.ResolveChordShapesAsync(generatedChords.OriginalVersion.ChordDefinitions, originalVer.Tuning, originalVer.Difficulty, ct));
+                altVer.ChordShapes = ChordResolverService.ToVersionLinks(
+                    await _chordResolver.ResolveChordShapesAsync(generatedChords.AlternateVersion.ChordDefinitions, altVer.Tuning, altVer.Difficulty, ct));
                 originalVer.NotationType = generatedChords.OriginalVersion.NotationType;
                 altVer.NotationType = generatedChords.AlternateVersion.NotationType;
 
@@ -301,7 +301,7 @@ namespace RiffForge.Server.Controllers
                     Difficulty = userSkillLevel,
                     Tuning = Tuning.Standard,
                     CapoPos = CapoPos.None,
-                    StrumPattern = StrumPattern.DownDownUp,
+                    StrumPattern = "D-D-U-U-D-U",
                     IsDefault = true,
                     TabData = lyricsText ?? string.Empty
                 });
