@@ -283,7 +283,7 @@ function SongDetailPage() {
                     {selectedVersion.sourceName && <span>Source: {selectedVersion.sourceName}</span>}
                 </div>
             )}
-
+            
             {selectedVersion && (
                 <div className="notation-switch fade-in-content" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px", margin: "0.5rem 0" }}>
                     {!song.versions?.some((v) => v.notationType === "TabNotation") && (
