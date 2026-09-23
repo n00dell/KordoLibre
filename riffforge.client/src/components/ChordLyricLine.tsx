@@ -25,46 +25,26 @@ export default function ChordLyricLine({ line, chordFrets }: Props) {
     const segments = parseChordLine(line);
 
     return (
-        <div style={{ position: "relative", lineHeight: "2.3em", marginBottom: "0.2em" }}>
+        // ChordLyricLine.tsx — key parts changed
+        <div className="chord-lyric-line">
             {segments.map((seg, i) => (
-                <span key={i} style={{ position: "relative", whiteSpace: "pre-wrap" }}>
-                    {seg.chord && (
-                        <span
-                            onMouseEnter={() => setHovered(seg.chord)}
-                            onMouseLeave={() => setHovered(null)}
-                            style={{
-                                position: "absolute",
-                                top: "-1.35em",
-                                left: 0,
-                                color: "var(--accent, #f97316)",
-                                fontWeight: 700,
-                                fontSize: "0.85em",
-                                cursor: "default"
-                            }}
-                        >
-                            {seg.chord}
-                            {hovered === seg.chord && chordFrets[seg.chord] && (
-                                <span
-                                    style={{
-                                        position: "absolute",
-                                        bottom: "135%",
-                                        left: 0,
-                                        zIndex: 200,
-                                        boxShadow: "0 10px 25px rgba(0,0,0,0.6)"
-                                    }}
-                                >
-                                    <ChordDiagram
-                                        name={seg.chord}
-                                        frets={chordFrets[seg.chord].fretPositions}
-                                        isBarreChord={chordFrets[seg.chord].isBarreChord}
-                                        scale={0.85}
-                                    />
-                                </span>
-                            )}
+                <span key={i} className="chord-unit">
+            {seg.chord && (
+                <span
+                    className="chord-tag"
+                    onMouseEnter={() => setHovered(seg.chord)}
+                    onMouseLeave={() => setHovered(null)}
+                >
+                    {seg.chord}
+                    {hovered === seg.chord && chordFrets[seg.chord] && (
+                        <span style={{ position: "absolute", bottom: "135%", left: 0, zIndex: 200, boxShadow: "0 10px 25px rgba(0,0,0,0.6)" }}>
+                            <ChordDiagram name={seg.chord} frets={chordFrets[seg.chord].fretPositions} isBarreChord={chordFrets[seg.chord].isBarreChord} scale={0.85} />
                         </span>
                     )}
-                    {seg.text}
                 </span>
+            )}
+                    <span className="lyric-text">{seg.text}</span>
+        </span>
             ))}
         </div>
     );

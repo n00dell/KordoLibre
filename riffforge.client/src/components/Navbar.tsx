@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 function Navbar() {
     const { user, loading, logout } = useAuth();
     const navigate = useNavigate();
+    const displayLabel = user?.displayName?.trim() || user?.email;
 
     async function handleLogout() {
         await logout();
@@ -45,7 +46,7 @@ function Navbar() {
                             <NavLink
                                 to="/profile"
                                 className={({ isActive }) => `user-profile${isActive ? " active" : ""}`}
-                                title={user.email}
+                                title={displayLabel}
                             >
                                 👤
                             </NavLink>

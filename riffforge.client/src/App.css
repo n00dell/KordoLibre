@@ -2207,3 +2207,39 @@ a {
     display: flex;
     gap: 10px;
 }
+.chord-progression {
+    background: var(--bg-elevated);
+    border: 1px solid var(--border-color);
+    border-radius: 14px;
+    padding: 1.5rem 1.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1.1rem;
+}
+.chord-progression-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.4em;
+    padding-bottom: 1rem;
+    border-bottom: 1px dashed var(--border-color);
+}
+.chord-progression-row:last-child { border-bottom: none; padding-bottom: 0; }
+.chord-sheet { max-width: 70ch; margin: 0 auto; overflow-x: auto; }
+.chord-lyric-line { display: flex; flex-wrap: wrap; row-gap: 0.9rem; margin-bottom: 0.9rem; }
+.chord-unit { position: relative; display: inline-block; padding-top: 1.3em; }
+.chord-tag {
+    position: absolute; top: 0; left: 0;
+    font-size: 0.75em; font-weight: 800; color: var(--bg-base);
+    background: var(--accent); padding: 1px 6px; border-radius: 4px; white-space: nowrap;
+    cursor: default;
+}
+.lyric-text { white-space: pre; font-size: 1.05rem; color: var(--text-primary); }
+.chord-progression-label {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    color: var(--text-muted);
+    margin-bottom: 0.5rem;
+    font-weight: 700;
+}
+.chord-progression-chords { display: flex; flex-wrap: wrap; gap: 1.4em; }

@@ -73,9 +73,9 @@ namespace RiffForge.Server.Controllers
             
             try
             {
-                 generated = await _chordFactory.GenerateChordsAsync(
-        song.PrimaryArtist.Name, song.Name, song.Lyrics, Difficulty.Intermediate,
-        preferredProviderKey: null, apiKeyOverride: null, ct);
+                generated = await _chordFactory.GenerateChordsAsync(
+                    song.PrimaryArtist.Name, song.Name, Difficulty.Intermediate,
+                    preferredProviderKey: null, apiKeyOverride: null, ct);
             }
             catch (HttpRequestException)
             {

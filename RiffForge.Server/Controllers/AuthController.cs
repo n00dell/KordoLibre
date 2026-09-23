@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Authorization;
+﻿using System.Security.Claims;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using RiffForge.Server.Data;
 using RiffForge.Server.Models;
 
@@ -67,13 +69,17 @@ namespace RiffForge.Server.Controllers
             return Ok();
         }
 
-        // Frontend calls this on app load to check "am I logged in?"
         [HttpGet("me")]
         [Authorize]
-        public IActionResult Me()
+        public async Task<IActionResult> Me()
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var email = User.Identity?.Name;
-            return Ok(new { email });
+            var displayName = await _db.UserProfiles
+                .Where(p => p.UserId == userId)
+                .Select(p => p.DisplayName)
+                .FirstOrDefaultAsync();
+            return Ok(new { id = userId, email, displayName });
         }
     }
 }

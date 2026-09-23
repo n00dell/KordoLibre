@@ -6,7 +6,6 @@ import { sampleSongs } from "../data/sampleData";
 import { useTheme } from "../context/ThemeContext";
 import ChordReferencePanel from "../components/ChordReferencePanel";
 import type { ChordItem } from "../types/models";
-import ChordLyricLine from "../components/ChordLyricLine";
 import TurntablePlayer from "../components/TurntablePlayer";
 import TapeDeckPlayer from "../components/TapeDeckPlayer";
 import TabBlock from "../components/TabBlock";
@@ -16,9 +15,7 @@ import ChordSubmissionEditor from "../components/ChordSubmissionEditor";
 import { fetchUserSubmissions } from "../api/submissions";
 import type { UserSubmission } from "../types/submissions";
 import { fetchLibraryStatus, addToLibrary, removeFromLibrary } from "../api/library";
-import { extractChordSequence, isChordOnlyLine } from "../utils/chordLyrics";
-import ChordSequenceLine from "../components/ChordSequenceLine";
-
+import ChordProgressionView from "../components/ChordProgressionView.tsx";
 
 // Helper to detect if the content looks like tablature
 const looksLikeTab = (text: string): boolean => {
@@ -43,11 +40,7 @@ function SongDetailPage() {
     const [inLibrary, setInLibrary] = useState(false);
     const [libraryBusy, setLibraryBusy] = useState(false);
     const [generatingNotation, setGeneratingNotation] = useState(false);
-    function extractChordSequence(line: string): string[] {
-        const matches = line.match(/\[([^\]]+)\]/g) || [];
-        return matches.map((m) => m.slice(1, -1));
-    }
-
+    
 // Also create a helper to get the full chord info
     const [userSubmissions, setUserSubmissions] = useState<UserSubmission[]>([]);
     const [loadingSubmissions, setLoadingSubmissions] = useState(true);
@@ -223,8 +216,7 @@ function SongDetailPage() {
         );
     }
 
-    const rawSheet = selectedVersion?.tabData || song.lyrics || "No chords available.";
-    const lines = rawSheet.split("\n");
+    const rawSheet = selectedVersion?.tabData ?? "";
 
     const isTab = selectedVersion
         ? selectedVersion.notationType === "TabNotation" || (selectedVersion.notationType == null && looksLikeTab(rawSheet))
@@ -301,7 +293,7 @@ function SongDetailPage() {
                     )}
                     {!song.versions?.some((v) => v.notationType === "ChordsOverLyrics") && (
                         <button className="notation-gen-btn" type="button" onClick={() => requestOtherNotation(0)} disabled={generatingNotation}>
-                            {generatingNotation ? "Generating…" : "Generate Chords-Over-Lyrics Version"}
+                            {generatingNotation ? "Generating…" : "Generate Chords Progression Version"}
                         </button>
                     )}
                     {notationError && <p className="empty-state" style={{ color: "#f87171" }}>{notationError}</p>}
@@ -316,15 +308,9 @@ function SongDetailPage() {
                 <h2>Chords &amp; Lyrics</h2>
                 <div className="chord-sheet-container" style={{ maxWidth: "800px" }}>
                     {isTab ? (
-                        <TabBlock tabData={rawSheet} structuredTab={structuredTab}/>
+                        <TabBlock tabData={rawSheet} structuredTab={structuredTab} />
                     ) : (
-                        lines.map((line, index) =>
-                            isChordOnlyLine(line) ? (
-                                <ChordSequenceLine key={index} chords={extractChordSequence(line)} chordFrets={chordFretMap} />
-                            ) : (
-                                <ChordLyricLine key={index} line={line} chordFrets={chordFretMap} />
-                            )
-                        )
+                        <ChordProgressionView tabData={rawSheet} chordFrets={chordFretMap} />
                     )}
                 </div>
             </section>

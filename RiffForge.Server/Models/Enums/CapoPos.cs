@@ -4,18 +4,18 @@
         public enum CapoPos
         {
             None = 0,
-            First = 1,
-            Second = 2,
-            Third = 3,
-            Fourth = 4,
-            Fifth = 5,
-            Sixth = 6,
-            Seventh = 7,
-            Eighth = 8,
-            Ninth = 9,
-            Tenth = 10,
-            Eleventh = 11,
-            Twelfth = 12
+            Fret1 = 1,
+            Fret2 = 2,
+            Fret3 = 3,
+            Fret4  = 4,
+            Fret5  = 5,
+            Fret6  = 6,
+            Fret7  = 7,
+            Fret8  = 8,
+            Fret9  = 9,
+            Fret10  = 10,
+            Fret11  = 11,
+            Fret12  = 12
         }
     }
 

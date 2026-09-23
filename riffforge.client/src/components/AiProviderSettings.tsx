@@ -1,6 +1,6 @@
 // src/components/AiProviderSettings.tsx
 import { useEffect, useState } from "react";
-import type { AiProviderPreference, ProviderKeyStatus } from "../types/profile";
+import type { AiProviderPreference, ProviderKeyStatus } from "../types/profile.ts";
 import { listProviderKeys, saveProviderKey, deleteProviderKey, testProviderKey } from "../api/aiKeys";
 
 interface Props {

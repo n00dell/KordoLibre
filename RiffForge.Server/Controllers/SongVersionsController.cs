@@ -56,7 +56,7 @@ namespace RiffForge.Server.Controllers
             try
             {
                 arrangement = await _chordFactory.GenerateSingleArrangementAsync(
-                    song.PrimaryArtist.Name, song.Name, song.Lyrics, difficulty, req.NotationType,
+                    song.PrimaryArtist.Name, song.Name, difficulty, req.NotationType,
                     preferredProviderKey: null, apiKeyOverride: null, ct);
             }
             catch (AllProvidersFailedException ex)

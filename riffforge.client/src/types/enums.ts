@@ -15,6 +15,7 @@
 
 export const Difficulty = {
     Beginner: "Beginner",
+    Easy: "Easy",
     Intermediate: "Intermediate",
     Advanced: "Advanced",
     Expert: "Expert",
@@ -27,7 +28,7 @@ export const Tuning = {
     HalfStepDown: "HalfStepDown",
     OpenG: "OpenG",
     DADGAD: "DADGAD",
-    OpenD: "DADF#AD",
+    OpenD: "OpenD",
     FullStepDown: "DGCFAD",
     DropC: "CGCFAD",
     
@@ -41,6 +42,13 @@ export const CapoPos = {
     Fret3: "Fret3",
     Fret4: "Fret4",
     Fret5: "Fret5",
+    Fret6: "Fret6",
+    Fret7: "Fret7",
+    Fret8: "Fret8",
+    Fret9: "Fret9",
+    Fret10: "Fret10",
+    Fret11: "Fret11",
+    Fret12: "Fret12"
 } as const;
 export type CapoPos = (typeof CapoPos)[keyof typeof CapoPos];
 

@@ -9,11 +9,11 @@ namespace RiffForge.Server.Services.Interfaces
         string ProviderKey { get; }
 
         Task<GeminiChordResponse?> GenerateChordsAsync(
-            string artist, string track, string? lyrics, Difficulty targetDifficulty,
+            string artist, string track, Difficulty targetDifficulty,
             string? apiKeyOverride = null, CancellationToken ct = default);
 
         Task<ChordArrangement?> GenerateSingleArrangementAsync(
-            string artist, string track, string? lyrics, Difficulty targetDifficulty,
+            string artist, string track, Difficulty targetDifficulty,
             NotationType notationType, string? apiKeyOverride = null, CancellationToken ct = default);
     }
 }

@@ -19,18 +19,16 @@ namespace RiffForge.Server.Controllers
     public class SongSearchController : ControllerBase
     {
         private readonly ILastFmService _lastFm;
-        private readonly ILyricsService _lyrics;
         private readonly RiffForgeDbContext _db;
         private readonly IChordProviderFactory _chordFactory;
         private readonly IChordResolverService _chordResolver;
         private readonly ILogger<SongSearchController> _logger;
         private readonly AiProviderResolver _aiProviderResolver;
 
-        public SongSearchController(ILastFmService lastFm, ILyricsService lyrics,RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongSearchController> logger, AiProviderResolver aiProviderResolver, IChordResolverService chordResolver)
+        public SongSearchController(ILastFmService lastFm, RiffForgeDbContext db, IChordProviderFactory chordFactory, ILogger<SongSearchController> logger, AiProviderResolver aiProviderResolver, IChordResolverService chordResolver)
         {
             _lastFm = lastFm;
             _db = db;
-            _lyrics = lyrics;
             _chordFactory = chordFactory;
             _chordResolver = chordResolver;
             _aiProviderResolver = aiProviderResolver;
@@ -184,18 +182,7 @@ namespace RiffForge.Server.Controllers
                 return Ok(completedReq);
             }
 
-            // ==========================================
-            // 3. FETCH LYRICS & CREATE NEW RECORDS
-            // ==========================================
-            string? lyricsText = null;
-            try
-            {
-                lyricsText = await _lyrics.GetLyricsAsync(finalArtistName, finalTrackName, ct);
-            }
-            catch
-            {
-                // Fallback handled safely
-            }
+            
 
             // Find or Create Artist
             var artist = await _db.Artists
@@ -220,7 +207,6 @@ namespace RiffForge.Server.Controllers
                 NormalizedName = finalNormTrack,
                 PrimaryArtistId = artist.Id,
                 AlbumArtUrl = detail.ImageUrl,
-                Lyrics = lyricsText,
                 BPM = 120,
                 ReleaseDate = DateTime.UtcNow,
                 LastUpdated = DateTime.UtcNow
@@ -233,7 +219,7 @@ namespace RiffForge.Server.Controllers
             try
             {
                 generatedChords = await _chordFactory.GenerateChordsAsync(
-                    artist.Name, song.Name, lyricsText, Difficulty.Intermediate,
+                    artist.Name, song.Name, Difficulty.Intermediate,
                     preferredProviderKey: providerKey, apiKeyOverride: apiKey, ct);
             }
             catch (AllProvidersFailedException ex)
@@ -303,7 +289,7 @@ namespace RiffForge.Server.Controllers
                     CapoPos = CapoPos.None,
                     StrumPattern = "D-D-U-U-D-U",
                     IsDefault = true,
-                    TabData = lyricsText ?? string.Empty
+                    TabData = string.Empty
                 });
             }
             // Create ScrapeRequest

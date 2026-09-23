@@ -49,7 +49,7 @@ namespace RiffForge.Server.Services
         }
 
         public async Task<GeminiChordResponse> GenerateChordsAsync(
-            string artist, string track, string? lyrics, Difficulty difficulty,
+            string artist, string track, Difficulty difficulty,
             string? preferredProviderKey = null, string? apiKeyOverride = null, CancellationToken ct = default)
         {
             var providers = ResolveProviderChain(preferredProviderKey);
@@ -59,10 +59,8 @@ namespace RiffForge.Server.Services
             {
                 try
                 {
-                    // apiKeyOverride only makes sense against an explicit single provider —
-                    // Auto mode always uses the server's own configured keys.
                     var keyToUse = preferredProviderKey != null ? apiKeyOverride : null;
-                    var result = await provider.GenerateChordsAsync(artist, track, lyrics, difficulty, keyToUse, ct);
+                    var result = await provider.GenerateChordsAsync(artist, track, difficulty, keyToUse, ct);
                     if (result == null) throw new ProviderInvalidResponseException(provider.ProviderKey, "Provider returned no content.");
                     _validator.ValidateAndSanitize(result, provider.ProviderKey);
                     return result;
@@ -78,7 +76,7 @@ namespace RiffForge.Server.Services
         }
 
         public async Task<ChordArrangement> GenerateSingleArrangementAsync(
-            string artist, string track, string? lyrics, Difficulty difficulty, NotationType notationType,
+            string artist, string track, Difficulty difficulty, NotationType notationType,
             string? preferredProviderKey = null, string? apiKeyOverride = null, CancellationToken ct = default)
         {
             var attempts = new List<ChordGenerationException>();
@@ -87,7 +85,7 @@ namespace RiffForge.Server.Services
                 try
                 {
                     var keyToUse = preferredProviderKey != null ? apiKeyOverride : null;
-                    var result = await provider.GenerateSingleArrangementAsync(artist, track, lyrics, difficulty, notationType, keyToUse, ct);
+                    var result = await provider.GenerateSingleArrangementAsync(artist, track, difficulty, notationType, keyToUse, ct);
                     if (result == null)
                         throw new ProviderInvalidResponseException(provider.ProviderKey, "Provider returned no content.");
 

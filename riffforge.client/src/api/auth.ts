@@ -5,7 +5,7 @@ export async function fetchMe(): Promise<AuthUser | null> {
     if (res.status === 401) return null;
     if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
-    return { id: data.id, email: data.email };
+    return { id: data.id, email: data.email, displayName: data.displayName ?? null };
 }
 
 export async function login(email: string, password: string): Promise<AuthUser> {

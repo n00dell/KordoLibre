@@ -56,3 +56,33 @@ export function extractChordSequence(line: string): string[] {
     const matches = line.match(/\[([^\]]+)\]/g) || [];
     return matches.map((m) => m.slice(1, -1));
 }
+export interface ChordSection {
+    label?: string;
+    chords: string[];
+}
+
+const SECTION_HEADER_RE = /^##\s*(.+)$/;
+export function extractChordProgression(tabData: string): ChordSection[] {
+    const sections: ChordSection[] = [];
+    let current: ChordSection = { chords: [] };
+
+    function flush() {
+        if (current.chords.length > 0 || current.label) sections.push(current);
+        current = { chords: [] };
+    }
+
+    for (const rawLine of tabData.split("\n")) {
+        const line = rawLine.trim();
+        const headerMatch = line.match(SECTION_HEADER_RE);
+        if (headerMatch) {
+            flush();
+            current.label = headerMatch[1].trim();
+            continue;
+        }
+        const chords = extractChordSequence(line);
+        if (chords.length === 0) continue;
+        current.chords.push(...chords);
+    }
+    flush();
+    return sections;
+}

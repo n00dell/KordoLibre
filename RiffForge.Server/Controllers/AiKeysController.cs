@@ -113,7 +113,7 @@ namespace RiffForge.Server.Controllers
                 // Cheapest real call available: ask for a single tiny arrangement.
                 // (Swap for a lighter health-check endpoint per provider later if cost matters.)
                 await _chordFactory.GenerateSingleArrangementAsync(
-                    "Test Artist", "Test Song", "test lyrics",
+                    "Test Artist", "Test Song",
                     Models.Enums.Difficulty.Beginner, Models.Enums.NotationType.ChordsOverLyrics,
                     preferredProviderKey: providerKey, apiKeyOverride: plaintext, ct);
 

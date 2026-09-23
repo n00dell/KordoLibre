@@ -1,5 +1,6 @@
 //profile.ts
 import type { AiProviderPreference } from "./models";
+export type { AiProviderPreference };
 export interface ProfileOptionItem {
     id: number;
     name: string;

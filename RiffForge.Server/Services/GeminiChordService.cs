@@ -22,7 +22,7 @@ namespace RiffForge.Server.Services
         }
 
         public async Task<ChordArrangement?> GenerateSingleArrangementAsync(
-            string artist, string track, string? lyrics, Difficulty targetDifficulty,
+            string artist, string track, Difficulty targetDifficulty,
             NotationType notationType, string? apiKeyOverride = null, CancellationToken ct = default)
         {
             var key = ResolveKey(apiKeyOverride);
@@ -32,32 +32,30 @@ namespace RiffForge.Server.Services
 string, e|B|G|D|A|E, using '-' for rests and fret numbers for notes),
 representing a fingerpicked or instrumental arrangement of the song.
 Set 'notationType' to 1. Put the tab in 'tabData'."
-                : @"Produce this as chords embedded directly into the lyrics: insert
-bracketed chord names in line with the text immediately before the
-syllable/word where the chord change happens, e.g.
-'[C]I can't be the one to tell you that you're [G]wrong'.
-This should be a strummed chord arrangement suited to accompanying the
-vocal. Set 'notationType' to 0. Put the bracketed lyrics in 'tabData'.";
+                : @"Produce ONLY the chord progression — do NOT include any lyrics or
+song text. Organize it by song section. For each section, put the section
+name on its own line prefixed with '##' (e.g. '##Verse 1'), followed by
+one line of bracketed chord names in the order they're played, e.g.
+'[C][G][Am][F]'. Repeat a chord for repeated bars if the rhythm matters
+(e.g. '[C][C][G][G]'). Set 'notationType' to 0. Put this chord-only
+structure in 'tabData'.";
 
             var prompt = $@"
-You are an expert musicologist, guitar transcriber, and instructor.
-Transcribe accurate guitar chords/tab for:
+You are an expert musicologist and guitar transcriber.
+Determine the accurate chord progression for:
 Song: '{track}'
 Artist: '{artist}'
 Target player level: {targetDifficulty}
- 
+
 {formatInstruction}
- 
+
 Use the ORIGINAL RECORDED SONG's key, real chord voicings/notes, tuning,
 and capo if used — this must be an authentic transcription, not simplified,
 unless the target player level requires substituting easier voicings.
- 
+
 For each chord in 'chordDefinitions', set 'isBarre' to true only if the
 voicing requires one finger to fret multiple strings at the same fret (a
-true barre shape), not just because the chord starts above fret 0.
- 
-Base Lyrics (for timing/structure reference only):
-{lyrics ?? "Use exact song lyrics."}";
+true barre shape), not just because the chord starts above fret 0.";
 
             var requestBody = new
             {
@@ -73,14 +71,14 @@ Base Lyrics (for timing/structure reference only):
         }
 
         public async Task<GeminiChordResponse?> GenerateChordsAsync(
-            string artist, string track, string? lyrics, Difficulty targetDifficulty,
+            string artist, string track, Difficulty targetDifficulty,
             string? apiKeyOverride = null, CancellationToken ct = default)
         {
             var key = ResolveKey(apiKeyOverride);
 
             var prompt = $@"
-You are an expert musicologist, guitar transcriber, and instructor.
-Transcribe and generate accurate guitar chords embedded directly into the lyrics for:
+You are an expert musicologist and guitar transcriber.
+Determine the accurate chord progression for:
 Song: '{track}'
 Artist: '{artist}'
 
@@ -88,13 +86,22 @@ Requirements:
 1. 'EstimatedBpm': Your best estimate of the song's actual tempo in beats per
    minute, based on its genre, feel, and known recording (a whole number,
    typically between 60 and 200).
-2. 'OriginalVersion' (IsDefault): Must be an accurate, authentic chord transcription matching the ORIGINAL RECORDED SONG (exact key, real chord voicings, tuning, and capo if used).
-3. 'AlternateVersion': An alternative arrangement tailored for a {targetDifficulty} player (e.g., if original uses difficult barre chords, use open chords with a capo; if original is simple, provide an advanced version).
-4. 'TabData' formatting: You MUST insert bracketed chord names directly in line with the text immediately before the syllable/word where the chord change happens.
-   Example output for TabData:
-   [C]I can't be the one to tell you that you're [G]wrong
-   [Am]I can only say how I feel when you're [F]gone
-
+2. 'OriginalVersion' (IsDefault): Must be an accurate, authentic chord
+   progression matching the ORIGINAL RECORDED SONG (exact key, real chord
+   voicings, tuning, and capo if used).
+3. 'AlternateVersion': An alternative arrangement tailored for an
+   intermediate player (e.g., if the original uses difficult barre chords,
+   use open chords with a capo; if the original is simple, provide a more
+   advanced version).
+4. 'TabData' formatting — DO NOT include any song lyrics or text of any
+   kind. Organize the progression by song section. For each section, put
+   the section name on its own line prefixed with '##' (e.g. '##Verse 1'),
+   followed by one line of bracketed chord names in the order they're
+   played. Repeat a chord for repeated bars if the rhythm matters. Example:
+   ##Verse 1
+   [C][G][Am][F]
+   ##Chorus
+   [F][C][G][G]
 5. Map Enums to Integers:
    - Difficulty: Beginner=0, Easy=1, Intermediate=2, Advanced=3, Expert=4
    - CapoPos: None=0, 1st=1, 2nd=2, 3rd=3, 4th=4, 5th=5, 6th=6, 7th=7...
@@ -107,17 +114,16 @@ Requirements:
    shape), not just because the chord starts above fret 0.
 7. Set 'notationType' to 1 (tab notation) if this song/arrangement is primarily
    fingerpicked or instrumental and is best represented as six-line ASCII guitar
-   tablature. Otherwise set it to 0 (chords inline above/within the lyrics, using
-   the bracket format described above). If notationType is 1, 'tabData' should
-   contain standard ASCII tab (one line per string, e|B|G|D|A|E, using '-' for
-   rests and fret numbers for notes) instead of bracketed lyrics.
+   tablature. Otherwise set it to 0 (the bracketed, section-organized chord
+   progression described in requirement 4). If notationType is 1, 'tabData'
+   should contain standard ASCII tab (one line per string, e|B|G|D|A|E, using
+   '-' for rests and fret numbers for notes) instead of the bracketed format.
 8. If notationType is 1 (tab), ALSO populate structuredTab: break the tab into
-sections by song part (Intro, Verse, Chorus, etc.), each with a columns array where 
-each column is one rhythmic position and has a frets array of exactly 6 integers ordere
-d low string (6th/E) to high string (1st/e), using -1 for a string not played in that column.
-Keep tabData populated too as a plain-text fallback of the same tab.
-Base Lyrics to embed chords into:
-{lyrics ?? "Use exact song lyrics."}";
+   sections by song part (Intro, Verse, Chorus, etc.), each with a columns array
+   where each column is one rhythmic position and has a frets array of exactly
+   6 integers ordered low string (6th/E) to high string (1st/e), using -1 for
+   a string not played in that column. Keep tabData populated too as a
+   plain-text fallback of the same tab.";
 
             var requestBody = new
             {
@@ -132,7 +138,7 @@ Base Lyrics to embed chords into:
             return Deserialize<GeminiChordResponse>(rawText);
         }
 
-        // ---- shared plumbing ----
+        // ---- shared plumbing (unchanged) ----
 
         private string ResolveKey(string? apiKeyOverride)
         {
@@ -332,7 +338,7 @@ Base Lyrics to embed chords into:
                     return response;
 
                 if (attempt < maxAttempts)
-                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), ct); // 2s, 4s
+                    await Task.Delay(TimeSpan.FromSeconds(Math.Pow(2, attempt)), ct);
             }
 
             return response!;

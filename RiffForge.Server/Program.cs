@@ -21,7 +21,6 @@ builder.Services.AddDbContext<RiffForgeDbContext>(options =>
 builder.Services.Configure<AiSettings>(builder.Configuration.GetSection("Ai"));
 builder.Services.AddHttpClient<ILastFmService, LastFmService>();
 builder.Services.AddHttpClient<IAlbumArtService, AlbumArtService>();
-builder.Services.AddHttpClient<ILyricsService, LyricsService>();
 builder.Services.AddScoped<IChordGenerationProvider, GeminiChordService>();
 builder.Services.AddScoped<IChordGenerationProvider, ClaudeChordProvider>();
 builder.Services.AddScoped<ChordArrangementValidator>();
